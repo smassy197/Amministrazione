@@ -97,8 +97,8 @@
 		Versione 8.4.0.0
 		-Creazione delle impostazioni di scadenza e viasulizzazione della scadenza in griglia
 	</Description>
-    <AssemblyVersion>8.4.0.0</AssemblyVersion>
-    <FileVersion>8.4.0.0</FileVersion>
+    <AssemblyVersion>8.4.0.1</AssemblyVersion>
+    <FileVersion>8.4.0.1</FileVersion>
     <EnableWindowsFormsHighDpi>true</EnableWindowsFormsHighDpi>
     <ApplicationIcon>amministrazione_new_logo.ico</ApplicationIcon> <!-- Abilita il supporto DPI alto -->
   </PropertyGroup>
