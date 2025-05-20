@@ -1,0 +1,206 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows10.0.17763.0</TargetFramework>
+	  <!-- <StartupObject>Sub Main</StartupObject> -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <MyType>WindowsForms</MyType>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <Copyright>Max Scarzella</Copyright>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+    <PackageIcon>amministrazione.png</PackageIcon>
+    <Title>Amministrazione</Title>
+    <Description>
+		Elenco delle Funzionalità dell'App "Amministrazione"
+		Versione dalla 1.0
+		Gestione del Database:
+
+		-Creazione del database amministrazione.db in AppData/Local/Amministrazione.
+		-Creazione della tabella Movimenti per registrare le transazioni finanziarie.
+		-Registrazione delle Transazioni.
+		-Inserimento di nuove transazioni con:
+		--Data
+		--Conto
+		--Descrizione
+		--Importo Addebito
+		--Importo Accredito
+		--Visualizzazione dei Dati.
+		-Visualizzazione delle transazioni in una DataGridView.
+		-Filtri disponibili per conto e descrizione.
+		-Modifica delle Transazioni:
+		--Modifica diretta delle transazioni dalla DataGridView.
+		-Aggiornamento automatico del database.
+		-Eliminazione delle Transazioni:
+		--Eliminazione di transazioni dalla DataGridView e dal database.
+		-Backup del Database:
+		--Creazione di backup del database salvati in Desktop con nomi univoci.
+		-Sostituzione del Database:
+		--Sostituzione del database con uno nuovo.
+		-Avviso di conferma prima della sostituzione.
+		-Gestione del Nome Utente:
+		--Inserimento del nome utente all'avvio.
+		-Salvataggio in userconfig.txt.
+		-Visualizzazione del nome nella barra del titolo.
+		-Aggiornamenti Automatici:
+		--Aggiornamento della DataGridView in tempo reale.
+		-Funzionalità Extra:
+		--Pulsanti per mostrare tutte le transazioni e aggiornare le etichette.
+		-Calcolo dei totali per Addebito, Accredito e Saldo.
+
+		Versione dalla 2.0
+		-Ottimizzazioni Generali:
+		--Definizione di percorsi per documenti e database.
+		--Inserimento e caricamento dati.
+		--Reset dei controlli.
+		--Gestione utente migliorata.
+		--Controllo di campi obbligatori.
+		--Manipolazione della DataGridView:
+		--Pulsanti per eliminare, modificare e aprire file direttamente nella griglia.
+		-Gestione Importi:
+		--Calcolo automatico degli importi inseriti.
+
+		Versione dalla 3.0
+		-Calendario:
+		--Eliminazione del calendario Krypton, sostituito con il MonthCalendar di Visual Studio.
+		-Ricerca Documenti:
+		--Implementazione di una funzione per la ricerca avanzata di documenti.
+		-Grafici:
+		--Aggiunta di una finestra per la visualizzazione grafica dei dati.
+
+		Versione dalla 6.0
+		-Interfaccia di Creazione File:
+		--Implementazione di un'interfaccia per la gestione e creazione di file.
+		-Importazione Dati:
+		--Importazione da file esterni (TXT, Excel).
+		--Importazione tramite copia/incolla dal database interno.
+
+		Versione dalla 8.1.1.8
+		-Sviluppo di una form di controllo e progettazione di file .rft e .txt.
+		-Inserimento della scadenza nei documenti.
+		-Sistema di modifica della numerazione.
+		-Passaggio a .NET9
+
+		Versione 8.2.0.0
+		-Sviluppo della funzione di inserimento guidato
+		-Sviluppo della funzione di inserimento file in un secondo momento
+		-Inserimento di icone "pagato", "da pagare", "nulla"
+
+		Versione 8.2.0.2
+		-Correzione finestra di backup con salvataggio e ricarica configurazione
+		-Correzzione finestra documenti, con creazione del tipo di pagamento se nullo
+
+		Versione 8.3.0.0
+		-Passaggio da Local/Appdata/Amministrazione a Desktop/Amministrazione
+
+		Versione 8.4.0.0
+		-Creazione delle impostazioni di scadenza e viasulizzazione della scadenza in griglia
+	</Description>
+    <AssemblyVersion>8.4.0.0</AssemblyVersion>
+    <FileVersion>8.4.0.0</FileVersion>
+    <EnableWindowsFormsHighDpi>true</EnableWindowsFormsHighDpi>
+    <ApplicationIcon>amministrazione_new_logo.ico</ApplicationIcon> <!-- Abilita il supporto DPI alto -->
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'" />
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'" />
+
+  
+
+  <ItemGroup>
+    <Content Include="amministrazione_new_logo.ico" />
+	  <Content Include="Icons\attention.png">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </Content>
+	  <Content Include="Icons\check.png">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </Content>
+	  <Content Include="Icons\empty.png">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </Content>
+	  <Content Include="Icons\white.png">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </Content>
+	  <Content Include="Icons\timer.png">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </Content>
+	  
+	    
+  </ItemGroup>
+
+  <ItemGroup>
+    <Import Include="System.Data" />
+    <Import Include="System.Drawing" />
+    <Import Include="System.Windows.Forms" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\..\OneDrive\Desktop\App\icone\amministrazione.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="bin\Debug\net8.0-windows10.0.17763.0\LICENSE.txt">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DocumentFormat.OpenXml" Version="3.3.0" />
+    <PackageReference Include="EPPlus" Version="8.0.2" />
+    <PackageReference Include="EPPlus.Interfaces" Version="8.0.0" />
+    <PackageReference Include="EPPlus.System.Drawing" Version="8.0.0" />
+    <PackageReference Include="FirebaseAdmin" Version="3.2.0" />
+    <PackageReference Include="Google.Cloud.Firestore" Version="3.10.0" />
+    <PackageReference Include="Google.Cloud.Storage.V1" Version="4.13.0" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
+    <PackageReference Include="System.Data.SQLite" Version="1.0.119" />
+    <PackageReference Include="System.Drawing.Common" Version="9.0.4" />
+    <PackageReference Include="System.Formats.Asn1" Version="9.0.4" />
+    <PackageReference Include="System.Text.Json" Version="9.0.4" />
+    <PackageReference Include="WinForms.DataVisualization" Version="1.10.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="My Project\Application.Designer.vb">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Application.myapp</DependentUpon>
+    </Compile>
+    <Compile Update="My Project\Resources.Designer.vb">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="My Project\Resources.resx">
+      <CustomToolNamespace>My.Resources</CustomToolNamespace>
+      <Generator>VbMyResourcesResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.vb</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+	  <None Update="Icons\attention.png">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Update="Icons\check.png">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Update="Icons\empty.png">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Update="Icons\timer.png">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Update="Icons\white.png">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+
+  </ItemGroup>
+
+</Project>
