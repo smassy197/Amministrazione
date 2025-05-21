@@ -107,6 +107,12 @@
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'" />
 
+  <ItemGroup>
+    <Compile Remove="bin\Debug\net8.0-windows10.0.17763.0\**" />
+    <EmbeddedResource Remove="bin\Debug\net8.0-windows10.0.17763.0\**" />
+    <None Remove="bin\Debug\net8.0-windows10.0.17763.0\**" />
+  </ItemGroup>
+
   
 
   <ItemGroup>
@@ -138,10 +144,6 @@
 
   <ItemGroup>
     <None Include="..\..\..\OneDrive\Desktop\App\icone\amministrazione.png">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-    <None Include="bin\Debug\net8.0-windows10.0.17763.0\LICENSE.txt">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
@@ -201,6 +203,10 @@
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>
 
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="bin\Debug\" />
   </ItemGroup>
 
 </Project>
