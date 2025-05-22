@@ -100,8 +100,8 @@
 		Versione 8.4.1.0
 		-Implementazione aggiornamento automatico dell'applicazione
 	</Description>
-    <AssemblyVersion>8.4.1.0</AssemblyVersion>
-    <FileVersion>8.4.1.0</FileVersion>
+    <AssemblyVersion>8.4.1.1</AssemblyVersion>
+    <FileVersion>8.4.1.1</FileVersion>
     <EnableWindowsFormsHighDpi>true</EnableWindowsFormsHighDpi>
     <ApplicationIcon>amministrazione_new_logo.ico</ApplicationIcon> <!-- Abilita il supporto DPI alto -->
   </PropertyGroup>
