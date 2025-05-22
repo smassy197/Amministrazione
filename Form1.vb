@@ -111,7 +111,7 @@ Public Class Form1
     Private Async Sub CheckForUpdate()
         Dim latestVersion As String = Await GetLatestVersionFromGitHubAsync()
         Dim currentVersion As String = GetCurrentAppVersion()
-
+        MessageBox.Show($"Versione locale: {currentVersion}, Versione online: {latestVersion}")
         If Not String.IsNullOrEmpty(latestVersion) AndAlso latestVersion <> currentVersion Then
             Dim result = MessageBox.Show(
             $"È disponibile una nuova versione: {latestVersion}.{vbCrLf}Vuoi scaricarla e installarla ora?",
