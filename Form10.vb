@@ -386,7 +386,34 @@ Public Class FormNuovoDocumento
         End If
     End Sub
 
+    Private Sub btnApriDocumento_Click(sender As Object, e As EventArgs) Handles btnApriDocumento.Click
+        Dim fileName As String = txtNomeFile.Text
+        If String.IsNullOrWhiteSpace(fileName) Then
+            MessageBox.Show("Nessun file selezionato o associato.", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End If
 
+        Dim fullPath As String
+        If Path.IsPathRooted(fileName) Then
+            fullPath = fileName
+        Else
+            fullPath = Path.Combine(documentsFolderPath, fileName)
+        End If
+
+        If Not File.Exists(fullPath) Then
+            MessageBox.Show("File non trovato: " & fullPath, "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Return
+        End If
+
+        Try
+            Dim psi As New ProcessStartInfo()
+            psi.FileName = fullPath
+            psi.UseShellExecute = True
+            Process.Start(psi)
+        Catch ex As Exception
+            MessageBox.Show("Errore nell'apertura del file: " & ex.Message, "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
 
 
 

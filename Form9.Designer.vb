@@ -177,6 +177,7 @@ Partial Class FormInserimentoGuidato
         Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         Icon = CType(resources.GetObject("$this.Icon"), Icon)
         Margin = New Padding(4)
+        MaximizeBox = False
         Name = "FormInserimentoGuidato"
         Text = "FormInserimentoGuidato"
         CType(dgvDocumenti, ComponentModel.ISupportInitialize).EndInit()

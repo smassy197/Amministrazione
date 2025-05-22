@@ -43,6 +43,7 @@ Partial Class FormNuovoDocumento
         chkPagato = New CheckBox()
         lblIndicatore = New Label()
         chkModificaFile = New CheckBox()
+        btnApriDocumento = New Button()
         SuspendLayout()
         ' 
         ' btnSalva
@@ -226,18 +227,28 @@ Partial Class FormNuovoDocumento
         ' chkModificaFile
         ' 
         chkModificaFile.AutoSize = True
-        chkModificaFile.Location = New Point(619, 399)
+        chkModificaFile.Location = New Point(595, 399)
         chkModificaFile.Name = "chkModificaFile"
         chkModificaFile.Size = New Size(115, 24)
         chkModificaFile.TabIndex = 55
         chkModificaFile.Text = "Modifica file"
         chkModificaFile.UseVisualStyleBackColor = True
         ' 
+        ' btnApriDocumento
+        ' 
+        btnApriDocumento.Location = New Point(716, 394)
+        btnApriDocumento.Name = "btnApriDocumento"
+        btnApriDocumento.Size = New Size(57, 29)
+        btnApriDocumento.TabIndex = 56
+        btnApriDocumento.Text = "Apri"
+        btnApriDocumento.UseVisualStyleBackColor = True
+        ' 
         ' FormNuovoDocumento
         ' 
         AutoScaleDimensions = New SizeF(8F, 20F)
         AutoScaleMode = AutoScaleMode.Font
         ClientSize = New Size(800, 450)
+        Controls.Add(btnApriDocumento)
         Controls.Add(chkModificaFile)
         Controls.Add(lblIndicatore)
         Controls.Add(chkPagato)
@@ -259,6 +270,7 @@ Partial Class FormNuovoDocumento
         Controls.Add(DateTimePickerData)
         Controls.Add(btnSalva)
         Icon = CType(resources.GetObject("$this.Icon"), Icon)
+        MaximizeBox = False
         Name = "FormNuovoDocumento"
         Text = "FormNuovoDocumento"
         ResumeLayout(False)
@@ -285,4 +297,5 @@ Partial Class FormNuovoDocumento
     Friend WithEvents chkPagato As CheckBox
     Friend WithEvents lblIndicatore As Label
     Friend WithEvents chkModificaFile As CheckBox
+    Friend WithEvents btnApriDocumento As Button
 End Class

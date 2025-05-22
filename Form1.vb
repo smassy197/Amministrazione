@@ -3,8 +3,8 @@ Imports System.IO
 Imports System.Reflection
 Imports System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel
 Imports DocumentFormat.OpenXml.Wordprocessing
-Imports FirebaseAdmin
-Imports FirebaseAdmin.Auth
+'Imports FirebaseAdmin
+'Imports FirebaseAdmin.Auth
 
 
 Public Class Form1
@@ -45,6 +45,9 @@ Public Class Form1
         ' Carica dati iniziali
         LoadData()
         LoadDataIntoComboboxes()
+        HighlightDatesWithDocuments()
+        MonthCalendar1.UpdateBoldedDates()
+
         Dim contiList As List(Of String) = GetUniqueContiFromMovimenti()
 
         ' Imposta il pulsante btnShowAll come invisibile all'avvio
@@ -78,7 +81,7 @@ Public Class Form1
         cmbContoType.Items.Add("Saldo")
         'cmbContoType.Items.Add("Saldo Progressivo")
 
-        HighlightDatesWithDocuments()
+
 
 
 
