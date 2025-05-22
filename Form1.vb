@@ -105,12 +105,13 @@ Public Class Form1
 
 
     Private Function GetCurrentAppVersion() As String
-        Return Application.ProductVersion ' oppure My.Application.Info.Version.ToString()
+        Return My.Application.Info.Version.ToString() 'Application.ProductVersion ' oppure My.Application.Info.Version.ToString()
     End Function
 
     Private Async Sub CheckForUpdate()
         Dim latestVersion As String = Await GetLatestVersionFromGitHubAsync()
         Dim currentVersion As String = GetCurrentAppVersion()
+        MessageBox.Show($"Versione locale: {currentVersion}, Versione online: {latestVersion}")
 
         If Not String.IsNullOrEmpty(latestVersion) AndAlso latestVersion <> currentVersion Then
             MessageBox.Show($"È disponibile una nuova versione: {latestVersion}.", "Aggiornamento disponibile", MessageBoxButtons.OK, MessageBoxIcon.Information)
