@@ -83,7 +83,7 @@ Public Class Form1
         'cmbContoType.Items.Add("Saldo Progressivo")
 
 
-
+        CheckForUpdate()
 
 
     End Sub
