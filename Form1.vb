@@ -1,5 +1,6 @@
 ﻿Imports System.Data.SQLite
 Imports System.IO
+Imports System.Net.Http
 Imports System.Reflection
 Imports System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel
 Imports DocumentFormat.OpenXml.Wordprocessing
@@ -87,6 +88,35 @@ Public Class Form1
 
     End Sub
 
+    Private Async Function GetLatestVersionFromGitHubAsync() As Task(Of String)
+        Dim versionUrl As String = "https://raw.githubusercontent.com/smassy197/Amministrazione/main/version.txt"
+        Try
+            Using client As New HttpClient()
+                Dim response As HttpResponseMessage = Await client.GetAsync(versionUrl)
+                If response.IsSuccessStatusCode Then
+                    Return (Await response.Content.ReadAsStringAsync()).Trim()
+                End If
+            End Using
+        Catch ex As Exception
+            ' Gestisci eventuali errori di rete
+        End Try
+        Return ""
+    End Function
+
+
+    Private Function GetCurrentAppVersion() As String
+        Return Application.ProductVersion ' oppure My.Application.Info.Version.ToString()
+    End Function
+
+    Private Async Sub CheckForUpdate()
+        Dim latestVersion As String = Await GetLatestVersionFromGitHubAsync()
+        Dim currentVersion As String = GetCurrentAppVersion()
+
+        If Not String.IsNullOrEmpty(latestVersion) AndAlso latestVersion <> currentVersion Then
+            MessageBox.Show($"È disponibile una nuova versione: {latestVersion}.", "Aggiornamento disponibile", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            ' Qui puoi aggiungere il link per il download o l’aggiornamento automatico
+        End If
+    End Sub
     Private Sub InitializeApp(userName As String)
 
         ' Imposta il titolo della finestra con il nome dell'utente
