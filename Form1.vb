@@ -105,7 +105,7 @@ Public Class Form1
 
 
     Private Function GetCurrentAppVersion() As String
-        Return Application.ProductVersion ' oppure My.Application.Info.Version.ToString()
+        Return My.Application.Info.Version.ToString() 'Application.ProductVersion ' oppure 
     End Function
 
     Private Async Sub CheckForUpdate()
