@@ -89,7 +89,7 @@ Public Class Form1
     End Sub
 
     Private Async Function GetLatestVersionFromGitHubAsync() As Task(Of String)
-        Dim versionUrl As String = "https://raw.githubusercontent.com/smassy197/Amministrazione/main/version.txt"
+        Dim versionUrl As String = "https://raw.githubusercontent.com/smassy197/Amministrazione/master/version.txt"
         Try
             Using client As New HttpClient()
                 Dim response As HttpResponseMessage = Await client.GetAsync(versionUrl)
