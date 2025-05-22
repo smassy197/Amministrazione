@@ -111,13 +111,41 @@ Public Class Form1
     Private Async Sub CheckForUpdate()
         Dim latestVersion As String = Await GetLatestVersionFromGitHubAsync()
         Dim currentVersion As String = GetCurrentAppVersion()
-        MessageBox.Show($"Versione locale: {currentVersion}, Versione online: {latestVersion}")
 
         If Not String.IsNullOrEmpty(latestVersion) AndAlso latestVersion <> currentVersion Then
-            MessageBox.Show($"È disponibile una nuova versione: {latestVersion}.", "Aggiornamento disponibile", MessageBoxButtons.OK, MessageBoxIcon.Information)
-            ' Qui puoi aggiungere il link per il download o l’aggiornamento automatico
+            Dim result = MessageBox.Show(
+            $"È disponibile una nuova versione: {latestVersion}.{vbCrLf}Vuoi scaricarla e installarla ora?",
+            "Aggiornamento disponibile",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question
+        )
+
+            If result = DialogResult.Yes Then
+                Await DownloadAndInstallUpdate()
+            End If
         End If
     End Sub
+
+    Private Async Function DownloadAndInstallUpdate() As Task
+        Try
+            ' URL del nuovo eseguibile (deve essere pubblico!)
+            Dim exeUrl As String = "https://github.com/smassy197/Amministrazione/mysetup_amministrazione.exe"
+            Dim tempPath As String = Path.Combine(Path.GetTempPath(), "Amministrazione_update.exe")
+
+            Using client As New HttpClient()
+                Dim exeBytes As Byte() = Await client.GetByteArrayAsync(exeUrl)
+                File.WriteAllBytes(tempPath, exeBytes)
+            End Using
+
+            MessageBox.Show("Download completato. L'applicazione verrà aggiornata.", "Aggiornamento", MessageBoxButtons.OK, MessageBoxIcon.Information)
+
+            ' Avvia il nuovo eseguibile e chiudi l'app corrente
+            Process.Start(tempPath)
+            Application.Exit()
+        Catch ex As Exception
+            MessageBox.Show("Errore durante l'aggiornamento: " & ex.Message)
+        End Try
+    End Function
     Private Sub InitializeApp(userName As String)
 
         ' Imposta il titolo della finestra con il nome dell'utente
