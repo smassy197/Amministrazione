@@ -129,7 +129,7 @@ Public Class Form1
     Private Async Function DownloadAndInstallUpdate() As Task
         Try
             ' URL del nuovo eseguibile (deve essere pubblico!)
-            Dim exeUrl As String = "https://github.com/smassy197/Amministrazione/mysetup_amministrazione.exe"
+            Dim exeUrl As String = "https://github.com/smassy197/Amministrazione/releases/latest/download/mysetup_amministrazione.exe"
             Dim tempPath As String = Path.Combine(Path.GetTempPath(), "Amministrazione_update.exe")
 
             Using client As New HttpClient()
