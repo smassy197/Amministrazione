@@ -1,0 +1,18 @@
+Copyright (c) 2024-2025 Massimiliano Scarzella - Amministrazione - All rights reserved. 
+
+-----------------------------------------------------------------------
+Versione 8.4.0.5 22/05/2025
+Max Scarzella
+scarzellam@gmail.com
+-----------------------------------------------------------------------
+
+
+This software and associated documentation files are proprietary and confidential to Massimiliano Scarzella. Unauthorized copying, sharing, modification, reverse engineering, or any kind of distribution of this software, via any medium, is strictly prohibited.
+
+Any use of this software outside the bounds of the original licensing agreement is a violation of international copyright law.
+
+Copyright (c) 2025 Massimiliano Scarzella - Amministrazione - Tutti i diritti riservati.
+
+Questo software e i relativi file di documentazione sono proprietari e confidenziali di Massimiliano Scarzella. E' severamente proibita qualsiasi copia, condivisione, modifica, ingegneria inversa o qualsiasi tipo di distribuzione di questo software, attraverso qualsiasi mezzo.
+
+Qualsiasi uso di questo software al di fuori dei limiti dell'accordo di licenza originale costituisce una violazione della legge internazionale sul diritto d'autore.
