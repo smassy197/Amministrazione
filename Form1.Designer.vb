@@ -51,7 +51,9 @@ Partial Class Form1
         Label2 = New Label()
         ProgressBar1 = New ProgressBar()
         lblDownloadStatus = New Label()
+        Panel1 = New Panel()
         CType(DataGridView1, ComponentModel.ISupportInitialize).BeginInit()
+        Panel1.SuspendLayout()
         SuspendLayout()
         ' 
         ' txtAdebito
@@ -282,29 +284,38 @@ Partial Class Form1
         ' 
         ' ProgressBar1
         ' 
-        ProgressBar1.Location = New Point(432, 424)
+        ProgressBar1.Location = New Point(9, 17)
         ProgressBar1.Name = "ProgressBar1"
-        ProgressBar1.Size = New Size(451, 43)
+        ProgressBar1.Size = New Size(436, 43)
         ProgressBar1.TabIndex = 31
         ProgressBar1.Visible = False
         ' 
         ' lblDownloadStatus
         ' 
         lblDownloadStatus.AutoSize = True
-        lblDownloadStatus.Location = New Point(621, 485)
+        lblDownloadStatus.Location = New Point(82, 63)
         lblDownloadStatus.Name = "lblDownloadStatus"
         lblDownloadStatus.Size = New Size(53, 20)
         lblDownloadStatus.TabIndex = 32
         lblDownloadStatus.Text = "Label7"
         lblDownloadStatus.Visible = False
         ' 
+        ' Panel1
+        ' 
+        Panel1.Controls.Add(ProgressBar1)
+        Panel1.Controls.Add(lblDownloadStatus)
+        Panel1.Location = New Point(438, 380)
+        Panel1.Name = "Panel1"
+        Panel1.Size = New Size(456, 98)
+        Panel1.TabIndex = 33
+        Panel1.Visible = False
+        ' 
         ' Form1
         ' 
         AutoScaleDimensions = New SizeF(8F, 20F)
         AutoScaleMode = AutoScaleMode.Font
         ClientSize = New Size(1260, 618)
-        Controls.Add(lblDownloadStatus)
-        Controls.Add(ProgressBar1)
+        Controls.Add(Panel1)
         Controls.Add(Label2)
         Controls.Add(RichTextBoxNota)
         Controls.Add(bntInfo)
@@ -336,6 +347,8 @@ Partial Class Form1
         Name = "Form1"
         Text = "Amministrazione"
         CType(DataGridView1, ComponentModel.ISupportInitialize).EndInit()
+        Panel1.ResumeLayout(False)
+        Panel1.PerformLayout()
         ResumeLayout(False)
         PerformLayout()
     End Sub
@@ -368,4 +381,5 @@ Partial Class Form1
     Friend WithEvents Label2 As Label
     Friend WithEvents ProgressBar1 As ProgressBar
     Friend WithEvents lblDownloadStatus As Label
+    Friend WithEvents Panel1 As Panel
 End Class

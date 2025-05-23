@@ -132,6 +132,7 @@ Public Class Form1
             Dim tempPath As String = Path.Combine(Path.GetTempPath(), "Amministrazione_update.exe")
 
             ProgressBar1.Value = 0
+            Panel1.Visible = True
             ProgressBar1.Visible = True
             lblDownloadStatus.Visible = True
             lblDownloadStatus.Text = "Download in corso... 0%"
@@ -166,12 +167,14 @@ Public Class Form1
             lblDownloadStatus.Text = "Download completato! Avvio aggiornamento..."
 
             Await Task.Delay(1000)
+            Panel1.Visible = False
             ProgressBar1.Visible = False
             lblDownloadStatus.Visible = False
 
             Process.Start(tempPath)
             Application.Exit()
         Catch ex As Exception
+            Panel1.Visible = False
             ProgressBar1.Visible = False
             lblDownloadStatus.Visible = False
             MessageBox.Show("Errore durante l'aggiornamento: " & ex.Message)
