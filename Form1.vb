@@ -128,21 +128,52 @@ Public Class Form1
 
     Private Async Function DownloadAndInstallUpdate() As Task
         Try
-            ' URL del nuovo eseguibile (deve essere pubblico!)
             Dim exeUrl As String = "https://github.com/smassy197/Amministrazione/releases/latest/download/mysetup_amministrazione.exe"
             Dim tempPath As String = Path.Combine(Path.GetTempPath(), "Amministrazione_update.exe")
 
+            ProgressBar1.Value = 0
+            ProgressBar1.Visible = True
+            lblDownloadStatus.Visible = True
+            lblDownloadStatus.Text = "Download in corso... 0%"
+
             Using client As New HttpClient()
-                Dim exeBytes As Byte() = Await client.GetByteArrayAsync(exeUrl)
-                File.WriteAllBytes(tempPath, exeBytes)
+                Using response As HttpResponseMessage = Await client.GetAsync(exeUrl, HttpCompletionOption.ResponseHeadersRead)
+                    response.EnsureSuccessStatusCode()
+                    Dim totalBytes = response.Content.Headers.ContentLength.GetValueOrDefault()
+                    Using inputStream = Await response.Content.ReadAsStreamAsync()
+                        Using outputStream = File.Create(tempPath)
+                            Dim buffer(8191) As Byte
+                            Dim totalRead As Long = 0
+                            Dim read As Integer
+                            Do
+                                read = Await inputStream.ReadAsync(buffer, 0, buffer.Length)
+                                If read = 0 Then Exit Do
+                                Await outputStream.WriteAsync(buffer, 0, read)
+                                totalRead += read
+                                If totalBytes > 0 Then
+                                    Dim percent = CInt((totalRead * 100) / totalBytes)
+                                    ProgressBar1.Value = percent
+                                    lblDownloadStatus.Text = $"Download in corso... {percent}%"
+                                End If
+                                Application.DoEvents()
+                            Loop
+                        End Using
+                    End Using
+                End Using
             End Using
 
-            MessageBox.Show("Download completato. L'applicazione verrà aggiornata.", "Aggiornamento", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            ProgressBar1.Value = 100
+            lblDownloadStatus.Text = "Download completato! Avvio aggiornamento..."
 
-            ' Avvia il nuovo eseguibile e chiudi l'app corrente
+            Await Task.Delay(1000)
+            ProgressBar1.Visible = False
+            lblDownloadStatus.Visible = False
+
             Process.Start(tempPath)
             Application.Exit()
         Catch ex As Exception
+            ProgressBar1.Visible = False
+            lblDownloadStatus.Visible = False
             MessageBox.Show("Errore durante l'aggiornamento: " & ex.Message)
         End Try
     End Function
@@ -425,6 +456,7 @@ Public Class Form1
         UpdateLabels()
         LoadDataIntoComboboxes()
         HighlightDatesWithDocuments()
+        MonthCalendar1.UpdateBoldedDates()
         txtAcredito.Text = ""
         txtAdebito.Text = ""
         cmbConto.Text = ""

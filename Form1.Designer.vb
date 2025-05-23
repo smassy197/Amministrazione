@@ -49,6 +49,8 @@ Partial Class Form1
         bntInfo = New Button()
         RichTextBoxNota = New RichTextBox()
         Label2 = New Label()
+        ProgressBar1 = New ProgressBar()
+        lblDownloadStatus = New Label()
         CType(DataGridView1, ComponentModel.ISupportInitialize).BeginInit()
         SuspendLayout()
         ' 
@@ -278,11 +280,31 @@ Partial Class Form1
         Label2.TabIndex = 30
         Label2.Text = "Note"
         ' 
+        ' ProgressBar1
+        ' 
+        ProgressBar1.Location = New Point(432, 424)
+        ProgressBar1.Name = "ProgressBar1"
+        ProgressBar1.Size = New Size(451, 43)
+        ProgressBar1.TabIndex = 31
+        ProgressBar1.Visible = False
+        ' 
+        ' lblDownloadStatus
+        ' 
+        lblDownloadStatus.AutoSize = True
+        lblDownloadStatus.Location = New Point(621, 485)
+        lblDownloadStatus.Name = "lblDownloadStatus"
+        lblDownloadStatus.Size = New Size(53, 20)
+        lblDownloadStatus.TabIndex = 32
+        lblDownloadStatus.Text = "Label7"
+        lblDownloadStatus.Visible = False
+        ' 
         ' Form1
         ' 
         AutoScaleDimensions = New SizeF(8F, 20F)
         AutoScaleMode = AutoScaleMode.Font
         ClientSize = New Size(1260, 618)
+        Controls.Add(lblDownloadStatus)
+        Controls.Add(ProgressBar1)
         Controls.Add(Label2)
         Controls.Add(RichTextBoxNota)
         Controls.Add(bntInfo)
@@ -344,4 +366,6 @@ Partial Class Form1
     Friend WithEvents bntInfo As Button
     Friend WithEvents RichTextBoxNota As RichTextBox
     Friend WithEvents Label2 As Label
+    Friend WithEvents ProgressBar1 As ProgressBar
+    Friend WithEvents lblDownloadStatus As Label
 End Class
