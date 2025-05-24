@@ -52,6 +52,7 @@ Partial Class Form1
         ProgressBar1 = New ProgressBar()
         lblDownloadStatus = New Label()
         Panel1 = New Panel()
+        btnExport = New Button()
         CType(DataGridView1, ComponentModel.ISupportInitialize).BeginInit()
         Panel1.SuspendLayout()
         SuspendLayout()
@@ -170,7 +171,7 @@ Partial Class Form1
         ' 
         ' btnCalculate
         ' 
-        btnCalculate.Location = New Point(773, 168)
+        btnCalculate.Location = New Point(696, 162)
         btnCalculate.Name = "btnCalculate"
         btnCalculate.Size = New Size(70, 41)
         btnCalculate.TabIndex = 18
@@ -206,9 +207,9 @@ Partial Class Form1
         ' 
         ' btnShowAll
         ' 
-        btnShowAll.Location = New Point(12, 311)
+        btnShowAll.Location = New Point(157, 238)
         btnShowAll.Name = "btnShowAll"
-        btnShowAll.Size = New Size(116, 29)
+        btnShowAll.Size = New Size(130, 41)
         btnShowAll.TabIndex = 22
         btnShowAll.Text = "Mostra tutto"
         btnShowAll.UseVisualStyleBackColor = True
@@ -240,18 +241,18 @@ Partial Class Form1
         ' 
         ' btnResetSearch
         ' 
-        btnResetSearch.Location = New Point(696, 168)
+        btnResetSearch.Location = New Point(18, 238)
         btnResetSearch.Name = "btnResetSearch"
-        btnResetSearch.Size = New Size(70, 41)
+        btnResetSearch.Size = New Size(133, 41)
         btnResetSearch.TabIndex = 26
         btnResetSearch.Text = "Reset"
         btnResetSearch.UseVisualStyleBackColor = True
         ' 
         ' OpenChart
         ' 
-        OpenChart.Location = New Point(847, 169)
+        OpenChart.Location = New Point(848, 162)
         OpenChart.Name = "OpenChart"
-        OpenChart.Size = New Size(99, 40)
+        OpenChart.Size = New Size(69, 41)
         OpenChart.TabIndex = 27
         OpenChart.Text = "Grafici"
         OpenChart.UseVisualStyleBackColor = True
@@ -310,11 +311,21 @@ Partial Class Form1
         Panel1.TabIndex = 33
         Panel1.Visible = False
         ' 
+        ' btnExport
+        ' 
+        btnExport.Location = New Point(772, 162)
+        btnExport.Name = "btnExport"
+        btnExport.Size = New Size(70, 41)
+        btnExport.TabIndex = 34
+        btnExport.Text = "Esporta"
+        btnExport.UseVisualStyleBackColor = True
+        ' 
         ' Form1
         ' 
         AutoScaleDimensions = New SizeF(8F, 20F)
         AutoScaleMode = AutoScaleMode.Font
         ClientSize = New Size(1260, 618)
+        Controls.Add(btnExport)
         Controls.Add(Panel1)
         Controls.Add(Label2)
         Controls.Add(RichTextBoxNota)
@@ -382,4 +393,5 @@ Partial Class Form1
     Friend WithEvents ProgressBar1 As ProgressBar
     Friend WithEvents lblDownloadStatus As Label
     Friend WithEvents Panel1 As Panel
+    Friend WithEvents btnExport As Button
 End Class

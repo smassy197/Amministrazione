@@ -44,6 +44,7 @@ Partial Class FormNuovoDocumento
         lblIndicatore = New Label()
         chkModificaFile = New CheckBox()
         btnApriDocumento = New Button()
+        panelPreview = New Panel()
         SuspendLayout()
         ' 
         ' btnSalva
@@ -243,11 +244,20 @@ Partial Class FormNuovoDocumento
         btnApriDocumento.Text = "Apri"
         btnApriDocumento.UseVisualStyleBackColor = True
         ' 
+        ' panelPreview
+        ' 
+        panelPreview.BorderStyle = BorderStyle.FixedSingle
+        panelPreview.Location = New Point(805, 25)
+        panelPreview.Name = "panelPreview"
+        panelPreview.Size = New Size(362, 398)
+        panelPreview.TabIndex = 57
+        ' 
         ' FormNuovoDocumento
         ' 
         AutoScaleDimensions = New SizeF(8F, 20F)
         AutoScaleMode = AutoScaleMode.Font
-        ClientSize = New Size(800, 450)
+        ClientSize = New Size(1191, 450)
+        Controls.Add(panelPreview)
         Controls.Add(btnApriDocumento)
         Controls.Add(chkModificaFile)
         Controls.Add(lblIndicatore)
@@ -298,4 +308,5 @@ Partial Class FormNuovoDocumento
     Friend WithEvents lblIndicatore As Label
     Friend WithEvents chkModificaFile As CheckBox
     Friend WithEvents btnApriDocumento As Button
+    Friend WithEvents panelPreview As Panel
 End Class

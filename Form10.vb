@@ -3,6 +3,8 @@ Imports System.IO
 Imports System.Diagnostics
 Imports DocumentFormat.OpenXml.Wordprocessing
 Imports System.Drawing
+Imports Patagames.Pdf.Net.Controls.WinForms
+
 
 Public Class FormNuovoDocumento
     Private connString As String
@@ -44,6 +46,7 @@ Public Class FormNuovoDocumento
         ' Se è in modalità modifica, carica i dati del documento
         If documentId.HasValue Then
             CaricaDatiDocumento(documentId.Value)
+            MostraAnteprimaDocumento()
         End If
     End Sub
 
@@ -413,6 +416,49 @@ Public Class FormNuovoDocumento
         Catch ex As Exception
             MessageBox.Show("Errore nell'apertura del file: " & ex.Message, "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
+    End Sub
+
+    Private Sub MostraAnteprimaDocumento()
+        panelPreview.Controls.Clear()
+        Dim fileName As String = txtNomeFile.Text
+        If String.IsNullOrWhiteSpace(fileName) Then Exit Sub
+
+        Dim fullPath As String
+        If Path.IsPathRooted(fileName) Then
+            fullPath = fileName
+        Else
+            fullPath = Path.Combine(documentsFolderPath, fileName)
+        End If
+
+        If Not File.Exists(fullPath) Then Exit Sub
+
+        Dim ext As String = Path.GetExtension(fullPath).ToLower()
+        If ext = ".pdf" Then
+            ' Usa Patagames Pdfium.Net SDK
+            Dim pdfViewer As New PdfViewer()
+            pdfViewer.Dock = DockStyle.Fill
+            pdfViewer.LoadDocument(fullPath)
+            panelPreview.Controls.Add(pdfViewer)
+        ElseIf ext = ".jpg" OrElse ext = ".jpeg" OrElse ext = ".png" OrElse ext = ".bmp" Then
+            Dim pb As New PictureBox()
+            pb.Dock = DockStyle.Fill
+            pb.SizeMode = PictureBoxSizeMode.Zoom
+            pb.Image = Image.FromFile(fullPath)
+            panelPreview.Controls.Add(pb)
+        ElseIf ext = ".txt" Then
+            Dim tb As New TextBox()
+            tb.Multiline = True
+            tb.ReadOnly = True
+            tb.Dock = DockStyle.Fill
+            tb.Text = File.ReadAllText(fullPath)
+            panelPreview.Controls.Add(tb)
+        Else
+            Dim lbl As New Label()
+            lbl.Text = "Nessuna anteprima disponibile"
+            lbl.Dock = DockStyle.Fill
+            lbl.TextAlign = ContentAlignment.MiddleCenter
+            panelPreview.Controls.Add(lbl)
+        End If
     End Sub
 
 

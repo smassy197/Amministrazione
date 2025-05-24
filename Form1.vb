@@ -1,8 +1,11 @@
 ﻿Imports System.Data.SQLite
 Imports System.IO
 Imports System.Net.Http
+Imports ClosedXML.Excel
 Imports System.Reflection
+Imports System.Text
 Imports System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel
+Imports DocumentFormat.OpenXml.Spreadsheet
 Imports DocumentFormat.OpenXml.Wordprocessing
 'Imports FirebaseAdmin
 'Imports FirebaseAdmin.Auth
@@ -638,10 +641,6 @@ Public Class Form1
         End If
     End Sub
 
-
-
-
-
     Private Function GetTotalAdebitoByDateRange(startDate As Date, endDate As Date) As Double
         ' Calcola la somma degli Addebiti tra le date selezionate
         Dim total As Double = 0
@@ -952,6 +951,70 @@ Public Class Form1
         AboutBox1.Show()
     End Sub
 
+
+
+    Private Sub btnExport_Click(sender As Object, e As EventArgs) Handles btnExport.Click
+        Dim startDate As Date = dtpStartDate.Value.Date
+        Dim endDate As Date = dtpEndDate.Value.Date
+
+        ' Carica i dati filtrati
+        Dim dt As DataTable = GetMovimentiByDateRange(startDate, endDate)
+
+        If dt.Rows.Count = 0 Then
+            MessageBox.Show("Nessun dato nell'intervallo selezionato.")
+            Return
+        End If
+
+        Using sfd As New SaveFileDialog()
+            sfd.Filter = "Excel (*.xlsx)|*.xlsx|CSV (*.csv)|*.csv"
+            sfd.FileName = $"Movimenti_{startDate:yyyyMMdd}_{endDate:yyyyMMdd}"
+            If sfd.ShowDialog() = DialogResult.OK Then
+                If sfd.FilterIndex = 1 Then
+                    ' Esporta in Excel
+                    Using wb As New XLWorkbook()
+                        wb.Worksheets.Add(dt, "Movimenti")
+                        wb.SaveAs(sfd.FileName)
+                    End Using
+                Else
+                    ' Esporta in CSV
+                    ExportDataTableToCSV(dt, sfd.FileName)
+                End If
+                MessageBox.Show("Esportazione completata!")
+            End If
+        End Using
+    End Sub
+
+    Private Function GetMovimentiByDateRange(startDate As Date, endDate As Date) As DataTable
+        Dim dt As New DataTable()
+        Dim databasePath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione", "amministrazione.db")
+        Dim connString As String = "Data Source=" & databasePath & ";Version=3;"
+        Using conn As New SQLiteConnection(connString)
+            conn.Open()
+            Using da As New SQLiteDataAdapter("SELECT * FROM Movimenti WHERE Data BETWEEN @startDate AND @endDate", conn)
+                da.SelectCommand.Parameters.AddWithValue("@startDate", startDate.ToString("yyyy-MM-dd"))
+                da.SelectCommand.Parameters.AddWithValue("@endDate", endDate.ToString("yyyy-MM-dd"))
+                da.Fill(dt)
+            End Using
+        End Using
+        Return dt
+    End Function
+
+    Private Sub ExportDataTableToCSV(dt As DataTable, filePath As String)
+        Dim sb As New StringBuilder()
+        ' Intestazioni
+        For Each col As DataColumn In dt.Columns
+            sb.Append(col.ColumnName & ";")
+        Next
+        sb.AppendLine()
+        ' Dati
+        For Each row As DataRow In dt.Rows
+            For Each col As DataColumn In dt.Columns
+                sb.Append(row(col)?.ToString() & ";")
+            Next
+            sb.AppendLine()
+        Next
+        File.WriteAllText(filePath, sb.ToString(), Encoding.UTF8)
+    End Sub
 
 End Class
 

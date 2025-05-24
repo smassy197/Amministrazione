@@ -1,5 +1,7 @@
 ﻿Imports System.Data.SQLite
 Imports System.IO
+Imports System.Text
+Imports ClosedXML.Excel
 
 
 Public Class Form3
@@ -161,9 +163,6 @@ Public Class Form3
         End Using
     End Sub
 
-
-
-
     Private Sub WriteLogEntry(action As String, details As String)
         Try
             ' Percorso del file di log
@@ -195,8 +194,6 @@ Public Class Form3
         End Try
     End Sub
 
-
-
     ' Aggiorna il gestore dell'evento btnSearch_Click
     Private Sub btnSearch_Click(sender As Object, e As EventArgs) Handles btnSearch.Click
         ' Aggiorna i valori dei filtri
@@ -213,9 +210,6 @@ Public Class Form3
         ' Carica i dati nel DataGridView con i nuovi filtri
         LoadDataIntoDataGridView(keywordSearch, startDate, endDate, documentType, selectedUtenteID, TextBoxAnno.Text.Trim(), ComboBoxNote.Text.Trim())
     End Sub
-
-
-
 
     Public Sub ResetFormControls()
 
@@ -383,7 +377,6 @@ Public Class Form3
         End If
     End Sub
 
-
     Private Sub EditDocument(row As DataGridViewRow)
         If row Is Nothing Then
             MessageBox.Show("Seleziona una riga valida.")
@@ -421,7 +414,6 @@ Public Class Form3
             PopulateComboBoxFromDatabase(ComboBoxNote, "Note")
         End If
     End Sub
-
     Private Sub DeleteDocument(row As DataGridViewRow)
         If row Is Nothing Then
             MessageBox.Show("Seleziona una riga valida.")
@@ -580,8 +572,6 @@ Public Class Form3
         ' Aggiungi un filtro specifico per la data selezionata
         LoadDataIntoDataGridView(keywordSearch, startDate, endDate, documentType, GetSelectedUtenteID(), TextBoxAnno.Text.Trim(), ComboBoxNote.Text.Trim())
     End Sub
-
-
 
     Private Sub ClearBoldedDates()
         ' Clear all bolded dates
@@ -928,6 +918,69 @@ Public Class Form3
 
     Private Sub picNotifica_MouseLeave(sender As Object, e As EventArgs) Handles picNotifica.MouseLeave
         picNotifica.Cursor = Cursors.Default
+    End Sub
+
+    Private Sub btnExport_Click(sender As Object, e As EventArgs) Handles btnExport.Click
+        Dim startDate As Date = dtpStartDate.Value.Date
+        Dim endDate As Date = dtpEndDate.Value.Date
+
+        ' Carica i dati filtrati
+        Dim dt = GetMovimentiByDateRange(startDate, endDate)
+
+        If dt.Rows.Count = 0 Then
+            MessageBox.Show("Nessun dato nell'intervallo selezionato.")
+            Return
+        End If
+
+        Using sfd As New SaveFileDialog
+            sfd.Filter = "Excel (*.xlsx)|*.xlsx|CSV (*.csv)|*.csv"
+            sfd.FileName = $"Documenti_{startDate:yyyyMMdd}_{endDate:yyyyMMdd}"
+            If sfd.ShowDialog = DialogResult.OK Then
+                If sfd.FilterIndex = 1 Then
+                    ' Esporta in Excel
+                    Using wb As New XLWorkbook
+                        wb.Worksheets.Add(dt, "Documenti")
+                        wb.SaveAs(sfd.FileName)
+                    End Using
+                Else
+                    ' Esporta in CSV
+                    ExportDataTableToCSV(dt, sfd.FileName)
+                End If
+                MessageBox.Show("Esportazione completata!")
+            End If
+        End Using
+    End Sub
+
+    Private Function GetMovimentiByDateRange(startDate As Date, endDate As Date) As DataTable
+        Dim dt As New DataTable()
+        Dim databasePath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione", "amministrazione.db")
+        Dim connString As String = "Data Source=" & databasePath & ";Version=3;"
+        Using conn As New SQLiteConnection(connString)
+            conn.Open()
+            Using da As New SQLiteDataAdapter("SELECT * FROM Documenti WHERE Data BETWEEN @startDate AND @endDate", conn)
+                da.SelectCommand.Parameters.AddWithValue("@startDate", startDate.ToString("yyyy-MM-dd"))
+                da.SelectCommand.Parameters.AddWithValue("@endDate", endDate.ToString("yyyy-MM-dd"))
+                da.Fill(dt)
+            End Using
+        End Using
+        Return dt
+    End Function
+
+    Private Sub ExportDataTableToCSV(dt As DataTable, filePath As String)
+        Dim sb As New StringBuilder()
+        ' Intestazioni
+        For Each col As DataColumn In dt.Columns
+            sb.Append(col.ColumnName & ";")
+        Next
+        sb.AppendLine()
+        ' Dati
+        For Each row As DataRow In dt.Rows
+            For Each col As DataColumn In dt.Columns
+                sb.Append(row(col)?.ToString() & ";")
+            Next
+            sb.AppendLine()
+        Next
+        File.WriteAllText(filePath, sb.ToString(), Encoding.UTF8)
     End Sub
 
 

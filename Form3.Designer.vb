@@ -45,6 +45,9 @@ Partial Class Form3
         lblNotifica = New Label()
         picNotifica = New PictureBox()
         btnInserimentoGuidato = New Button()
+        btnExport = New Button()
+        dtpEndDate = New DateTimePicker()
+        dtpStartDate = New DateTimePicker()
         CType(dgvDocumenti, ComponentModel.ISupportInitialize).BeginInit()
         CType(picNotifica, ComponentModel.ISupportInitialize).BeginInit()
         SuspendLayout()
@@ -145,9 +148,9 @@ Partial Class Form3
         ' btnOpenForm3
         ' 
         btnOpenForm3.Font = New Font("Segoe UI", 13.8F)
-        btnOpenForm3.Location = New Point(494, 199)
+        btnOpenForm3.Location = New Point(400, 199)
         btnOpenForm3.Name = "btnOpenForm3"
-        btnOpenForm3.Size = New Size(139, 59)
+        btnOpenForm3.Size = New Size(92, 59)
         btnOpenForm3.TabIndex = 25
         btnOpenForm3.Text = "Conti"
         btnOpenForm3.UseVisualStyleBackColor = True
@@ -173,9 +176,9 @@ Partial Class Form3
         ' Button1
         ' 
         Button1.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        Button1.Location = New Point(658, 199)
+        Button1.Location = New Point(498, 199)
         Button1.Name = "Button1"
-        Button1.Size = New Size(139, 59)
+        Button1.Size = New Size(92, 59)
         Button1.TabIndex = 31
         Button1.Text = "Fogli"
         Button1.UseVisualStyleBackColor = True
@@ -242,11 +245,37 @@ Partial Class Form3
         btnInserimentoGuidato.Text = "Inserimento Guidato"
         btnInserimentoGuidato.UseVisualStyleBackColor = True
         ' 
+        ' btnExport
+        ' 
+        btnExport.Location = New Point(857, 199)
+        btnExport.Name = "btnExport"
+        btnExport.Size = New Size(75, 59)
+        btnExport.TabIndex = 51
+        btnExport.Text = "Esporta"
+        btnExport.UseVisualStyleBackColor = True
+        ' 
+        ' dtpEndDate
+        ' 
+        dtpEndDate.Location = New Point(601, 231)
+        dtpEndDate.Name = "dtpEndDate"
+        dtpEndDate.Size = New Size(250, 27)
+        dtpEndDate.TabIndex = 50
+        ' 
+        ' dtpStartDate
+        ' 
+        dtpStartDate.Location = New Point(601, 199)
+        dtpStartDate.Name = "dtpStartDate"
+        dtpStartDate.Size = New Size(250, 27)
+        dtpStartDate.TabIndex = 49
+        ' 
         ' Form3
         ' 
         AutoScaleDimensions = New SizeF(8F, 20F)
         AutoScaleMode = AutoScaleMode.Font
         ClientSize = New Size(1304, 650)
+        Controls.Add(btnExport)
+        Controls.Add(dtpEndDate)
+        Controls.Add(dtpStartDate)
         Controls.Add(btnInserimentoGuidato)
         Controls.Add(picNotifica)
         Controls.Add(lblNotifica)
@@ -301,4 +330,7 @@ Partial Class Form3
     Friend WithEvents picNotifica As PictureBox
     Friend WithEvents Button2 As Button
     Friend WithEvents btnInserimentoGuidato As Button
+    Friend WithEvents btnExport As Button
+    Friend WithEvents dtpEndDate As DateTimePicker
+    Friend WithEvents dtpStartDate As DateTimePicker
 End Class
