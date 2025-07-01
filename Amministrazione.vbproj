@@ -102,8 +102,8 @@
 		-Implementazione della funzione di esportazione dati per intervallo di date
 		-Implementazione della visualizzazione dell'anteprima del file
 	</Description>
-    <AssemblyVersion>8.4.1.5</AssemblyVersion>
-    <FileVersion>8.4.1.5</FileVersion>
+    <AssemblyVersion>8.4.1.6</AssemblyVersion>
+    <FileVersion>8.4.1.6</FileVersion>
     <EnableWindowsFormsHighDpi>true</EnableWindowsFormsHighDpi>
     <ApplicationIcon>amministrazione_new_logo.ico</ApplicationIcon> <!-- Abilita il supporto DPI alto -->
   </PropertyGroup>

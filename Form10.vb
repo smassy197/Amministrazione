@@ -112,6 +112,8 @@ Public Class FormNuovoDocumento
             If InsertDocument(txtNomeFile.Text) Then
                 MessageBox.Show("Documento caricato con successo.")
 
+                ResetCampi()
+
                 ' Scrivi nel log
                 ' Ottieni la scadenza
                 Dim scadenza = If(chkScadenzaAttiva.Checked, DateTimePickerScadenza.Value.ToString("yyyy-MM-dd"), "Nessuna scadenza")
@@ -136,6 +138,19 @@ Public Class FormNuovoDocumento
                 MessageBox.Show("Si è verificato un errore durante il caricamento del documento.")
             End If
         End If
+    End Sub
+
+    Private Sub ResetCampi()
+        TextBoxAnno.Text = ""
+        TextBoxNote.Text = ""
+        TextBoxImporto.Text = ""
+        txtNomeFile.Text = ""
+        chkDaPagare.Checked = False
+        chkPagato.Checked = False
+        chkScadenzaAttiva.Checked = False
+        chkModificaFile.Checked = False
+        DateTimePickerScadenza.Value = DateTime.Now
+        ' Se hai altri campi da azzerare, aggiungili qui
     End Sub
 
     Public Function UpdateDocument(documentId As Integer) As Boolean
