@@ -3,7 +3,6 @@ Imports System.IO
 Imports System.Diagnostics
 Imports DocumentFormat.OpenXml.Wordprocessing
 Imports System.Drawing
-Imports Patagames.Pdf.Net.Controls.WinForms
 Imports System.IO.Compression
 
 
@@ -449,18 +448,17 @@ Public Class FormNuovoDocumento
         If Not File.Exists(fullPath) Then Exit Sub
 
         Dim ext As String = Path.GetExtension(fullPath).ToLower()
+
+        ' --- ZIP ---
         If ext = ".zip" AndAlso documentId.HasValue Then
-            ' Mostra lista file ZIP e pulsante aggiunta
             Dim lstZipFiles As New ListBox()
             lstZipFiles.Dock = DockStyle.Fill
             lstZipFiles.SelectionMode = SelectionMode.One
 
-            ' Costruisci la lista delle cartelle e dei file
             Dim folders As New HashSet(Of String)
             Using zip As ZipArchive = ZipFile.OpenRead(fullPath)
                 For Each entry As ZipArchiveEntry In zip.Entries
                     lstZipFiles.Items.Add(entry.FullName)
-                    ' Aggiungi anche le cartelle (solo una volta)
                     Dim dir = Path.GetDirectoryName(entry.FullName)
                     If Not String.IsNullOrEmpty(dir) AndAlso Not folders.Contains(dir) Then
                         lstZipFiles.Items.Add(dir & "/")
@@ -471,7 +469,7 @@ Public Class FormNuovoDocumento
 
             panelPreview.Controls.Add(lstZipFiles)
 
-            ' Pulsante per aggiungere file allo ZIP
+            ' Pulsante aggiungi file
             Dim btnAggiungiAzip As New Button()
             btnAggiungiAzip.Text = "Aggiungi file allo ZIP"
             btnAggiungiAzip.Dock = DockStyle.Bottom
@@ -481,12 +479,9 @@ Public Class FormNuovoDocumento
                                                       If ofd.ShowDialog() = DialogResult.OK Then
                                                           Dim fileNameToAdd = Path.GetFileName(ofd.FileName)
                                                           Dim destPath = Path.Combine(documentsFolderPath, fileNameToAdd)
-                                                          ' Copia il file nella cartella dei documenti se non esiste già
                                                           If Not File.Exists(destPath) Then
                                                               File.Copy(ofd.FileName, destPath)
                                                           End If
-
-                                                          ' Determina la cartella interna selezionata
                                                           Dim internalFolder As String = ""
                                                           If lstZipFiles.SelectedItem IsNot Nothing Then
                                                               Dim sel = lstZipFiles.SelectedItem.ToString()
@@ -496,12 +491,8 @@ Public Class FormNuovoDocumento
                                                                   internalFolder = Path.GetDirectoryName(sel).Replace("\", "/") & "/"
                                                               End If
                                                           End If
-
-                                                          ' Costruisci il path interno nello zip
                                                           Dim internalZipPath As String = If(String.IsNullOrEmpty(internalFolder), fileNameToAdd, internalFolder & fileNameToAdd)
-
                                                           Using zipToOpen As ZipArchive = ZipFile.Open(fullPath, ZipArchiveMode.Update)
-                                                              ' Evita duplicati nello ZIP
                                                               If zipToOpen.Entries.Any(Function(entry) entry.FullName = internalZipPath) Then
                                                                   MessageBox.Show("File già presente nello ZIP.")
                                                               Else
@@ -514,7 +505,8 @@ Public Class FormNuovoDocumento
                                                   End Using
                                               End Sub
             panelPreview.Controls.Add(btnAggiungiAzip)
-            ' Pulsante per eliminare file dallo ZIP
+
+            ' Pulsante elimina file
             Dim btnEliminaAzip As New Button()
             btnEliminaAzip.Text = "Elimina file dallo ZIP"
             btnEliminaAzip.Dock = DockStyle.Bottom
@@ -546,37 +538,86 @@ Public Class FormNuovoDocumento
             Return
         End If
 
-
-
-
-
+        ' --- PDF ---
         If ext = ".pdf" Then
-            ' Usa Patagames Pdfium.Net SDK
-            Dim pdfViewer As New PdfViewer()
-            pdfViewer.Dock = DockStyle.Fill
-            pdfViewer.LoadDocument(fullPath)
-            panelPreview.Controls.Add(pdfViewer)
-        ElseIf ext = ".jpg" OrElse ext = ".jpeg" OrElse ext = ".png" OrElse ext = ".bmp" Then
-            Dim pb As New PictureBox()
-            pb.Dock = DockStyle.Fill
-            pb.SizeMode = PictureBoxSizeMode.Zoom
-            pb.Image = Image.FromFile(fullPath)
-            panelPreview.Controls.Add(pb)
-        ElseIf ext = ".txt" Then
-            Dim tb As New TextBox()
-            tb.Multiline = True
-            tb.ReadOnly = True
-            tb.Dock = DockStyle.Fill
-            tb.Text = File.ReadAllText(fullPath)
-            panelPreview.Controls.Add(tb)
-        Else
-            Dim lbl As New Label()
-            lbl.Text = "Nessuna anteprima disponibile"
-            lbl.Dock = DockStyle.Fill
-            lbl.TextAlign = ContentAlignment.MiddleCenter
-            panelPreview.Controls.Add(lbl)
+            Try
+                ' Rimuovi eventuali WebView2 già presenti
+                For i As Integer = panelPreview.Controls.Count - 1 To 0 Step -1
+                    Dim ctrl = panelPreview.Controls(i)
+                    If ctrl.GetType().FullName = "Microsoft.Web.WebView2.WinForms.WebView2" Then
+                        panelPreview.Controls.RemoveAt(i)
+                        CType(ctrl, IDisposable).Dispose()
+                    End If
+                Next
+
+                ' Crea e aggiungi il controllo WebView2
+                Dim webView As New Microsoft.Web.WebView2.WinForms.WebView2()
+                webView.Dock = DockStyle.Fill
+                webView.Source = New Uri(fullPath)
+                panelPreview.Controls.Add(webView)
+            Catch ex As Exception
+                Dim lbl As New Label()
+                lbl.Text = "Errore anteprima PDF: " & ex.Message
+                lbl.Dock = DockStyle.Fill
+                lbl.TextAlign = ContentAlignment.MiddleCenter
+                panelPreview.Controls.Add(lbl)
+            End Try
+            Return
         End If
+
+        ' --- Immagini ---
+        If ext = ".jpg" OrElse ext = ".jpeg" OrElse ext = ".png" OrElse ext = ".bmp" Then
+            Try
+                Dim pb As New PictureBox()
+                pb.Dock = DockStyle.Fill
+                pb.SizeMode = PictureBoxSizeMode.Zoom
+                pb.Image = Image.FromFile(fullPath)
+                panelPreview.Controls.Add(pb)
+            Catch ex As Exception
+                Dim lbl As New Label()
+                lbl.Text = "Errore anteprima immagine: " & ex.Message
+                lbl.Dock = DockStyle.Fill
+                lbl.TextAlign = ContentAlignment.MiddleCenter
+                panelPreview.Controls.Add(lbl)
+            End Try
+            Return
+        End If
+
+        ' --- TXT ---
+        If ext = ".txt" Then
+            Try
+                Dim tb As New TextBox()
+                tb.Multiline = True
+                tb.ReadOnly = True
+                tb.Dock = DockStyle.Fill
+                tb.Text = File.ReadAllText(fullPath)
+                panelPreview.Controls.Add(tb)
+            Catch ex As Exception
+                Dim lbl As New Label()
+                lbl.Text = "Errore anteprima testo: " & ex.Message
+                lbl.Dock = DockStyle.Fill
+                lbl.TextAlign = ContentAlignment.MiddleCenter
+                panelPreview.Controls.Add(lbl)
+            End Try
+            Return
+        End If
+
+        ' --- Default ---
+        Dim lblDefault As New Label()
+        lblDefault.Text = "Nessuna anteprima disponibile"
+        lblDefault.Dock = DockStyle.Fill
+        lblDefault.TextAlign = ContentAlignment.MiddleCenter
+        panelPreview.Controls.Add(lblDefault)
     End Sub
+    Private Function ReadExactly(fs As FileStream, buffer As Byte(), offset As Integer, count As Integer) As Integer
+        Dim totalRead As Integer = 0
+        While totalRead < count
+            Dim bytesRead As Integer = fs.Read(buffer, offset + totalRead, count - totalRead)
+            If bytesRead = 0 Then Exit While
+            totalRead += bytesRead
+        End While
+        Return totalRead
+    End Function
 
 
 

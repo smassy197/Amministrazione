@@ -157,15 +157,15 @@
   <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="DocumentFormat.OpenXml" Version="3.3.0" />
-    <PackageReference Include="EPPlus" Version="8.0.5" />
+    <PackageReference Include="EPPlus" Version="8.0.7" />
     <PackageReference Include="EPPlus.Interfaces" Version="8.0.0" />
     <PackageReference Include="EPPlus.System.Drawing" Version="8.0.0" />
-    <PackageReference Include="Pdfium.Net.SDK" Version="4.99.2704" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3351.48" />
     <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
     <PackageReference Include="System.Data.SQLite" Version="1.0.119" />
-    <PackageReference Include="System.Drawing.Common" Version="9.0.5" />
-    <PackageReference Include="System.Formats.Asn1" Version="9.0.5" />
-    <PackageReference Include="System.Text.Json" Version="9.0.5" />
+    <PackageReference Include="System.Drawing.Common" Version="9.0.7" />
+    <PackageReference Include="System.Formats.Asn1" Version="9.0.7" />
+    <PackageReference Include="System.Text.Json" Version="9.0.7" />
     <PackageReference Include="WinForms.DataVisualization" Version="1.10.0" />
   </ItemGroup>
 
