@@ -4,6 +4,7 @@ Imports System.Diagnostics
 Imports DocumentFormat.OpenXml.Wordprocessing
 Imports System.Drawing
 Imports Patagames.Pdf.Net.Controls.WinForms
+Imports System.IO.Compression
 
 
 Public Class FormNuovoDocumento
@@ -448,6 +449,107 @@ Public Class FormNuovoDocumento
         If Not File.Exists(fullPath) Then Exit Sub
 
         Dim ext As String = Path.GetExtension(fullPath).ToLower()
+        If ext = ".zip" AndAlso documentId.HasValue Then
+            ' Mostra lista file ZIP e pulsante aggiunta
+            Dim lstZipFiles As New ListBox()
+            lstZipFiles.Dock = DockStyle.Fill
+            lstZipFiles.SelectionMode = SelectionMode.One
+
+            ' Costruisci la lista delle cartelle e dei file
+            Dim folders As New HashSet(Of String)
+            Using zip As ZipArchive = ZipFile.OpenRead(fullPath)
+                For Each entry As ZipArchiveEntry In zip.Entries
+                    lstZipFiles.Items.Add(entry.FullName)
+                    ' Aggiungi anche le cartelle (solo una volta)
+                    Dim dir = Path.GetDirectoryName(entry.FullName)
+                    If Not String.IsNullOrEmpty(dir) AndAlso Not folders.Contains(dir) Then
+                        lstZipFiles.Items.Add(dir & "/")
+                        folders.Add(dir)
+                    End If
+                Next
+            End Using
+
+            panelPreview.Controls.Add(lstZipFiles)
+
+            ' Pulsante per aggiungere file allo ZIP
+            Dim btnAggiungiAzip As New Button()
+            btnAggiungiAzip.Text = "Aggiungi file allo ZIP"
+            btnAggiungiAzip.Dock = DockStyle.Bottom
+            AddHandler btnAggiungiAzip.Click, Sub(sender2, e2)
+                                                  Using ofd As New OpenFileDialog()
+                                                      ofd.Title = "Seleziona file da aggiungere allo ZIP"
+                                                      If ofd.ShowDialog() = DialogResult.OK Then
+                                                          Dim fileNameToAdd = Path.GetFileName(ofd.FileName)
+                                                          Dim destPath = Path.Combine(documentsFolderPath, fileNameToAdd)
+                                                          ' Copia il file nella cartella dei documenti se non esiste già
+                                                          If Not File.Exists(destPath) Then
+                                                              File.Copy(ofd.FileName, destPath)
+                                                          End If
+
+                                                          ' Determina la cartella interna selezionata
+                                                          Dim internalFolder As String = ""
+                                                          If lstZipFiles.SelectedItem IsNot Nothing Then
+                                                              Dim sel = lstZipFiles.SelectedItem.ToString()
+                                                              If sel.EndsWith("/") Then
+                                                                  internalFolder = sel
+                                                              ElseIf sel.Contains("/") Then
+                                                                  internalFolder = Path.GetDirectoryName(sel).Replace("\", "/") & "/"
+                                                              End If
+                                                          End If
+
+                                                          ' Costruisci il path interno nello zip
+                                                          Dim internalZipPath As String = If(String.IsNullOrEmpty(internalFolder), fileNameToAdd, internalFolder & fileNameToAdd)
+
+                                                          Using zipToOpen As ZipArchive = ZipFile.Open(fullPath, ZipArchiveMode.Update)
+                                                              ' Evita duplicati nello ZIP
+                                                              If zipToOpen.Entries.Any(Function(entry) entry.FullName = internalZipPath) Then
+                                                                  MessageBox.Show("File già presente nello ZIP.")
+                                                              Else
+                                                                  zipToOpen.CreateEntryFromFile(destPath, internalZipPath)
+                                                                  MessageBox.Show("File aggiunto con successo.")
+                                                              End If
+                                                          End Using
+                                                          MostraAnteprimaDocumento()
+                                                      End If
+                                                  End Using
+                                              End Sub
+            panelPreview.Controls.Add(btnAggiungiAzip)
+            ' Pulsante per eliminare file dallo ZIP
+            Dim btnEliminaAzip As New Button()
+            btnEliminaAzip.Text = "Elimina file dallo ZIP"
+            btnEliminaAzip.Dock = DockStyle.Bottom
+            AddHandler btnEliminaAzip.Click, Sub(sender2, e2)
+                                                 If lstZipFiles.SelectedItem Is Nothing Then
+                                                     MessageBox.Show("Seleziona un file da eliminare.", "Attenzione", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                                                     Return
+                                                 End If
+                                                 Dim selectedEntry = lstZipFiles.SelectedItem.ToString()
+                                                 If selectedEntry.EndsWith("/") Then
+                                                     MessageBox.Show("Non puoi eliminare una cartella direttamente. Seleziona un file.", "Attenzione", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                                                     Return
+                                                 End If
+                                                 Dim conferma = MessageBox.Show($"Vuoi eliminare il file '{selectedEntry}' dallo ZIP?", "Conferma eliminazione", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+                                                 If conferma = DialogResult.Yes Then
+                                                     Using zipToOpen As ZipArchive = ZipFile.Open(fullPath, ZipArchiveMode.Update)
+                                                         Dim entry = zipToOpen.GetEntry(selectedEntry)
+                                                         If entry IsNot Nothing Then
+                                                             entry.Delete()
+                                                             MessageBox.Show("File eliminato con successo.")
+                                                         Else
+                                                             MessageBox.Show("File non trovato nello ZIP.")
+                                                         End If
+                                                     End Using
+                                                     MostraAnteprimaDocumento()
+                                                 End If
+                                             End Sub
+            panelPreview.Controls.Add(btnEliminaAzip)
+            Return
+        End If
+
+
+
+
+
         If ext = ".pdf" Then
             ' Usa Patagames Pdfium.Net SDK
             Dim pdfViewer As New PdfViewer()
