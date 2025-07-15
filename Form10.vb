@@ -467,6 +467,32 @@ Public Class FormNuovoDocumento
                 Next
             End Using
 
+
+            ' Gestore doppio click per anteprima file
+            AddHandler lstZipFiles.DoubleClick, Sub(sender2, e2)
+                                                    If lstZipFiles.SelectedItem Is Nothing Then Return
+                                                    Dim selectedEntry = lstZipFiles.SelectedItem.ToString()
+                                                    If selectedEntry.EndsWith("/") Then Return ' Ignora cartelle
+
+                                                    ' Estrai il file in una cartella temporanea
+                                                    Dim tempDir = Path.Combine(Path.GetTempPath(), "AmministrazionePreview")
+                                                    If Not Directory.Exists(tempDir) Then Directory.CreateDirectory(tempDir)
+                                                    Dim tempFile = Path.Combine(tempDir, Path.GetFileName(selectedEntry))
+
+                                                    If File.Exists(tempFile) Then File.Delete(tempFile)
+
+                                                    Using zip As ZipArchive = ZipFile.OpenRead(fullPath)
+                                                        Dim entry = zip.GetEntry(selectedEntry)
+                                                        If entry IsNot Nothing Then
+                                                            entry.ExtractToFile(tempFile)
+                                                            ' Apri anteprima in una finestra separata
+                                                            Using anteprima As New FormAnteprimaDocumento(tempFile)
+                                                                anteprima.ShowDialog(Me)
+                                                            End Using
+                                                        End If
+                                                    End Using
+                                                End Sub
+
             panelPreview.Controls.Add(lstZipFiles)
 
             ' Pulsante aggiungi file
