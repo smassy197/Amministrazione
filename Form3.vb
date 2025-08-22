@@ -136,6 +136,17 @@ Public Class Form3
                 Using command As New SQLiteCommand(createTableQuery, connection)
                     command.ExecuteNonQuery()
                 End Using
+
+                ' Creazione della tabella Allegati se non esiste
+                Dim cmdAllegati As New SQLiteCommand(
+                    "CREATE TABLE IF NOT EXISTS Allegati (
+                        ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                        DocumentoID INTEGER,
+                        NomeFile TEXT,
+                        PercorsoFile TEXT,
+                        FOREIGN KEY (DocumentoID) REFERENCES Documenti(ID)
+                    )", connection)
+                cmdAllegati.ExecuteNonQuery()
             End Using
         Catch ex As Exception
             MessageBox.Show("Si è verificato un errore durante la creazione della tabella 'Documenti' nel database.")

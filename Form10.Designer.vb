@@ -31,8 +31,6 @@ Partial Class FormNuovoDocumento
         Label1 = New Label()
         Label2 = New Label()
         Label3 = New Label()
-        btnSfogliaFile = New Button()
-        txtNomeFile = New TextBox()
         chkScadenzaAttiva = New CheckBox()
         DateTimePickerScadenza = New DateTimePicker()
         Label4 = New Label()
@@ -42,17 +40,21 @@ Partial Class FormNuovoDocumento
         chkDaPagare = New CheckBox()
         chkPagato = New CheckBox()
         lblIndicatore = New Label()
-        chkModificaFile = New CheckBox()
-        btnApriDocumento = New Button()
         panelPreview = New Panel()
+        lstAllegati = New ListBox()
+        btnAggiungiAllegato = New Button()
+        btnRimuoviAllegato = New Button()
+        btnAllegatoUp = New Button()
+        btnAllegatoDown = New Button()
         SuspendLayout()
         ' 
         ' btnSalva
         ' 
         btnSalva.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        btnSalva.Location = New Point(619, 57)
+        btnSalva.Location = New Point(542, 43)
+        btnSalva.Margin = New Padding(3, 2, 3, 2)
         btnSalva.Name = "btnSalva"
-        btnSalva.Size = New Size(154, 93)
+        btnSalva.Size = New Size(135, 70)
         btnSalva.TabIndex = 0
         btnSalva.Text = "Salva"
         btnSalva.UseVisualStyleBackColor = True
@@ -60,42 +62,46 @@ Partial Class FormNuovoDocumento
         ' DateTimePickerData
         ' 
         DateTimePickerData.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        DateTimePickerData.Location = New Point(29, 137)
+        DateTimePickerData.Location = New Point(25, 103)
+        DateTimePickerData.Margin = New Padding(3, 2, 3, 2)
         DateTimePickerData.Name = "DateTimePickerData"
-        DateTimePickerData.Size = New Size(348, 34)
+        DateTimePickerData.Size = New Size(305, 29)
         DateTimePickerData.TabIndex = 1
         ' 
         ' TextBoxAnno
         ' 
         TextBoxAnno.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        TextBoxAnno.Location = New Point(29, 202)
+        TextBoxAnno.Location = New Point(25, 152)
+        TextBoxAnno.Margin = New Padding(3, 2, 3, 2)
         TextBoxAnno.Name = "TextBoxAnno"
-        TextBoxAnno.Size = New Size(125, 34)
+        TextBoxAnno.Size = New Size(110, 29)
         TextBoxAnno.TabIndex = 2
         ' 
         ' TextBoxImporto
         ' 
         TextBoxImporto.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        TextBoxImporto.Location = New Point(29, 257)
+        TextBoxImporto.Location = New Point(25, 193)
+        TextBoxImporto.Margin = New Padding(3, 2, 3, 2)
         TextBoxImporto.Name = "TextBoxImporto"
-        TextBoxImporto.Size = New Size(125, 34)
+        TextBoxImporto.Size = New Size(110, 29)
         TextBoxImporto.TabIndex = 3
         ' 
         ' TextBoxNote
         ' 
         TextBoxNote.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        TextBoxNote.Location = New Point(29, 317)
+        TextBoxNote.Location = New Point(25, 238)
+        TextBoxNote.Margin = New Padding(3, 2, 3, 2)
         TextBoxNote.Name = "TextBoxNote"
-        TextBoxNote.Size = New Size(635, 34)
+        TextBoxNote.Size = New Size(598, 29)
         TextBoxNote.TabIndex = 4
         ' 
         ' Label1
         ' 
         Label1.AutoSize = True
         Label1.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        Label1.Location = New Point(187, 202)
+        Label1.Location = New Point(164, 152)
         Label1.Name = "Label1"
-        Label1.Size = New Size(197, 28)
+        Label1.Size = New Size(155, 21)
         Label1.TabIndex = 5
         Label1.Text = "Anno del documento"
         ' 
@@ -103,9 +109,9 @@ Partial Class FormNuovoDocumento
         ' 
         Label2.AutoSize = True
         Label2.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        Label2.Location = New Point(187, 256)
+        Label2.Location = New Point(164, 192)
         Label2.Name = "Label2"
-        Label2.Size = New Size(84, 28)
+        Label2.Size = New Size(66, 21)
         Label2.TabIndex = 6
         Label2.Text = "Importo"
         ' 
@@ -113,36 +119,19 @@ Partial Class FormNuovoDocumento
         ' 
         Label3.AutoSize = True
         Label3.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        Label3.Location = New Point(678, 323)
+        Label3.Location = New Point(629, 246)
         Label3.Name = "Label3"
-        Label3.Size = New Size(56, 28)
+        Label3.Size = New Size(44, 21)
         Label3.TabIndex = 7
         Label3.Text = "Note"
-        ' 
-        ' btnSfogliaFile
-        ' 
-        btnSfogliaFile.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        btnSfogliaFile.Location = New Point(29, 389)
-        btnSfogliaFile.Name = "btnSfogliaFile"
-        btnSfogliaFile.Size = New Size(94, 37)
-        btnSfogliaFile.TabIndex = 8
-        btnSfogliaFile.Text = "Sfoglia"
-        btnSfogliaFile.UseVisualStyleBackColor = True
-        ' 
-        ' txtNomeFile
-        ' 
-        txtNomeFile.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        txtNomeFile.Location = New Point(146, 390)
-        txtNomeFile.Name = "txtNomeFile"
-        txtNomeFile.Size = New Size(443, 34)
-        txtNomeFile.TabIndex = 9
         ' 
         ' chkScadenzaAttiva
         ' 
         chkScadenzaAttiva.AutoSize = True
-        chkScadenzaAttiva.Location = New Point(619, 223)
+        chkScadenzaAttiva.Location = New Point(542, 167)
+        chkScadenzaAttiva.Margin = New Padding(3, 2, 3, 2)
         chkScadenzaAttiva.Name = "chkScadenzaAttiva"
-        chkScadenzaAttiva.Size = New Size(150, 24)
+        chkScadenzaAttiva.Size = New Size(120, 19)
         chkScadenzaAttiva.TabIndex = 46
         chkScadenzaAttiva.Text = "Imposta scadenza"
         chkScadenzaAttiva.UseVisualStyleBackColor = True
@@ -151,56 +140,58 @@ Partial Class FormNuovoDocumento
         ' 
         DateTimePickerScadenza.CustomFormat = "dd/MM/yyyy HH:mm"
         DateTimePickerScadenza.Format = DateTimePickerFormat.Custom
-        DateTimePickerScadenza.Location = New Point(519, 253)
+        DateTimePickerScadenza.Location = New Point(454, 190)
+        DateTimePickerScadenza.Margin = New Padding(3, 2, 3, 2)
         DateTimePickerScadenza.Name = "DateTimePickerScadenza"
         DateTimePickerScadenza.ShowUpDown = True
-        DateTimePickerScadenza.Size = New Size(250, 27)
+        DateTimePickerScadenza.Size = New Size(219, 23)
         DateTimePickerScadenza.TabIndex = 47
         ' 
         ' Label4
         ' 
         Label4.AutoSize = True
         Label4.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        Label4.Location = New Point(12, 46)
+        Label4.Location = New Point(10, 34)
         Label4.Margin = New Padding(4, 0, 4, 0)
         Label4.Name = "Label4"
-        Label4.Size = New Size(111, 28)
+        Label4.Size = New Size(88, 21)
         Label4.TabIndex = 51
         Label4.Text = "Pagamento"
         ' 
         ' txtTipoPagamento
         ' 
-        txtTipoPagamento.Location = New Point(131, 43)
-        txtTipoPagamento.Margin = New Padding(4)
+        txtTipoPagamento.Location = New Point(115, 32)
+        txtTipoPagamento.Margin = New Padding(4, 3, 4, 3)
         txtTipoPagamento.Name = "txtTipoPagamento"
-        txtTipoPagamento.Size = New Size(411, 27)
+        txtTipoPagamento.Size = New Size(360, 23)
         txtTipoPagamento.TabIndex = 50
         ' 
         ' Label5
         ' 
         Label5.AutoSize = True
         Label5.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        Label5.Location = New Point(12, 11)
+        Label5.Location = New Point(10, 8)
         Label5.Margin = New Padding(4, 0, 4, 0)
         Label5.Name = "Label5"
-        Label5.Size = New Size(71, 28)
+        Label5.Size = New Size(56, 21)
         Label5.TabIndex = 49
         Label5.Text = "Utente"
         ' 
         ' txtUtente
         ' 
-        txtUtente.Location = New Point(102, 8)
-        txtUtente.Margin = New Padding(4)
+        txtUtente.Location = New Point(89, 6)
+        txtUtente.Margin = New Padding(4, 3, 4, 3)
         txtUtente.Name = "txtUtente"
-        txtUtente.Size = New Size(440, 27)
+        txtUtente.Size = New Size(386, 23)
         txtUtente.TabIndex = 48
         ' 
         ' chkDaPagare
         ' 
         chkDaPagare.AutoSize = True
-        chkDaPagare.Location = New Point(619, 165)
+        chkDaPagare.Location = New Point(542, 124)
+        chkDaPagare.Margin = New Padding(3, 2, 3, 2)
         chkDaPagare.Name = "chkDaPagare"
-        chkDaPagare.Size = New Size(101, 24)
+        chkDaPagare.Size = New Size(79, 19)
         chkDaPagare.TabIndex = 52
         chkDaPagare.Text = "Da pagare"
         chkDaPagare.UseVisualStyleBackColor = True
@@ -208,9 +199,10 @@ Partial Class FormNuovoDocumento
         ' chkPagato
         ' 
         chkPagato.AutoSize = True
-        chkPagato.Location = New Point(619, 193)
+        chkPagato.Location = New Point(542, 145)
+        chkPagato.Margin = New Padding(3, 2, 3, 2)
         chkPagato.Name = "chkPagato"
-        chkPagato.Size = New Size(77, 24)
+        chkPagato.Size = New Size(63, 19)
         chkPagato.TabIndex = 53
         chkPagato.Text = "Pagato"
         chkPagato.UseVisualStyleBackColor = True
@@ -219,47 +211,76 @@ Partial Class FormNuovoDocumento
         ' 
         lblIndicatore.AutoSize = True
         lblIndicatore.Font = New Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
-        lblIndicatore.Location = New Point(581, 11)
+        lblIndicatore.Location = New Point(508, 8)
         lblIndicatore.Name = "lblIndicatore"
-        lblIndicatore.Size = New Size(74, 28)
+        lblIndicatore.Size = New Size(60, 21)
         lblIndicatore.TabIndex = 54
         lblIndicatore.Text = "Label6"
-        ' 
-        ' chkModificaFile
-        ' 
-        chkModificaFile.AutoSize = True
-        chkModificaFile.Location = New Point(595, 399)
-        chkModificaFile.Name = "chkModificaFile"
-        chkModificaFile.Size = New Size(115, 24)
-        chkModificaFile.TabIndex = 55
-        chkModificaFile.Text = "Modifica file"
-        chkModificaFile.UseVisualStyleBackColor = True
-        ' 
-        ' btnApriDocumento
-        ' 
-        btnApriDocumento.Location = New Point(716, 394)
-        btnApriDocumento.Name = "btnApriDocumento"
-        btnApriDocumento.Size = New Size(57, 29)
-        btnApriDocumento.TabIndex = 56
-        btnApriDocumento.Text = "Apri"
-        btnApriDocumento.UseVisualStyleBackColor = True
         ' 
         ' panelPreview
         ' 
         panelPreview.BorderStyle = BorderStyle.FixedSingle
-        panelPreview.Location = New Point(805, 25)
+        panelPreview.Location = New Point(704, 19)
+        panelPreview.Margin = New Padding(3, 2, 3, 2)
         panelPreview.Name = "panelPreview"
-        panelPreview.Size = New Size(362, 398)
+        panelPreview.Size = New Size(399, 442)
         panelPreview.TabIndex = 57
+        ' 
+        ' lstAllegati
+        ' 
+        lstAllegati.FormattingEnabled = True
+        lstAllegati.Location = New Point(115, 293)
+        lstAllegati.Name = "lstAllegati"
+        lstAllegati.Size = New Size(508, 169)
+        lstAllegati.TabIndex = 58
+        ' 
+        ' btnAggiungiAllegato
+        ' 
+        btnAggiungiAllegato.Location = New Point(23, 293)
+        btnAggiungiAllegato.Name = "btnAggiungiAllegato"
+        btnAggiungiAllegato.Size = New Size(75, 76)
+        btnAggiungiAllegato.TabIndex = 59
+        btnAggiungiAllegato.Text = "Aggiungi allegato"
+        btnAggiungiAllegato.UseVisualStyleBackColor = True
+        ' 
+        ' btnRimuoviAllegato
+        ' 
+        btnRimuoviAllegato.Location = New Point(23, 385)
+        btnRimuoviAllegato.Name = "btnRimuoviAllegato"
+        btnRimuoviAllegato.Size = New Size(75, 76)
+        btnRimuoviAllegato.TabIndex = 60
+        btnRimuoviAllegato.Text = "Rimuovi allegato"
+        btnRimuoviAllegato.UseVisualStyleBackColor = True
+        ' 
+        ' btnAllegatoUp
+        ' 
+        btnAllegatoUp.Location = New Point(629, 320)
+        btnAllegatoUp.Name = "btnAllegatoUp"
+        btnAllegatoUp.Size = New Size(48, 49)
+        btnAllegatoUp.TabIndex = 61
+        btnAllegatoUp.Text = "Su"
+        btnAllegatoUp.UseVisualStyleBackColor = True
+        ' 
+        ' btnAllegatoDown
+        ' 
+        btnAllegatoDown.Location = New Point(629, 375)
+        btnAllegatoDown.Name = "btnAllegatoDown"
+        btnAllegatoDown.Size = New Size(48, 49)
+        btnAllegatoDown.TabIndex = 62
+        btnAllegatoDown.Text = "Giù"
+        btnAllegatoDown.UseVisualStyleBackColor = True
         ' 
         ' FormNuovoDocumento
         ' 
-        AutoScaleDimensions = New SizeF(8F, 20F)
+        AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
-        ClientSize = New Size(1191, 450)
+        ClientSize = New Size(1114, 474)
+        Controls.Add(btnAllegatoDown)
+        Controls.Add(btnAllegatoUp)
+        Controls.Add(btnRimuoviAllegato)
+        Controls.Add(btnAggiungiAllegato)
+        Controls.Add(lstAllegati)
         Controls.Add(panelPreview)
-        Controls.Add(btnApriDocumento)
-        Controls.Add(chkModificaFile)
         Controls.Add(lblIndicatore)
         Controls.Add(chkPagato)
         Controls.Add(chkDaPagare)
@@ -269,8 +290,6 @@ Partial Class FormNuovoDocumento
         Controls.Add(txtUtente)
         Controls.Add(DateTimePickerScadenza)
         Controls.Add(chkScadenzaAttiva)
-        Controls.Add(txtNomeFile)
-        Controls.Add(btnSfogliaFile)
         Controls.Add(Label3)
         Controls.Add(Label2)
         Controls.Add(Label1)
@@ -280,6 +299,7 @@ Partial Class FormNuovoDocumento
         Controls.Add(DateTimePickerData)
         Controls.Add(btnSalva)
         Icon = CType(resources.GetObject("$this.Icon"), Icon)
+        Margin = New Padding(3, 2, 3, 2)
         MaximizeBox = False
         Name = "FormNuovoDocumento"
         Text = "FormNuovoDocumento"
@@ -295,8 +315,6 @@ Partial Class FormNuovoDocumento
     Friend WithEvents Label1 As Label
     Friend WithEvents Label2 As Label
     Friend WithEvents Label3 As Label
-    Friend WithEvents btnSfogliaFile As Button
-    Friend WithEvents txtNomeFile As TextBox
     Friend WithEvents chkScadenzaAttiva As CheckBox
     Friend WithEvents DateTimePickerScadenza As DateTimePicker
     Friend WithEvents Label4 As Label
@@ -306,7 +324,10 @@ Partial Class FormNuovoDocumento
     Friend WithEvents chkDaPagare As CheckBox
     Friend WithEvents chkPagato As CheckBox
     Friend WithEvents lblIndicatore As Label
-    Friend WithEvents chkModificaFile As CheckBox
-    Friend WithEvents btnApriDocumento As Button
     Friend WithEvents panelPreview As Panel
+    Friend WithEvents lstAllegati As ListBox
+    Friend WithEvents btnAggiungiAllegato As Button
+    Friend WithEvents btnRimuoviAllegato As Button
+    Friend WithEvents btnAllegatoUp As Button
+    Friend WithEvents btnAllegatoDown As Button
 End Class

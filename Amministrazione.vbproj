@@ -101,9 +101,12 @@
 		-Implementazione aggiornamento automatico dell'applicazione
 		-Implementazione della funzione di esportazione dati per intervallo di date
 		-Implementazione della visualizzazione dell'anteprima del file
+		
+	    Versione 8.4.2.0
+		-Implementazione della funzione allegati
 	</Description>
-    <AssemblyVersion>8.4.1.9</AssemblyVersion>
-    <FileVersion>8.4.1.9</FileVersion>
+    <AssemblyVersion>8.4.2.0</AssemblyVersion>
+    <FileVersion>8.4.2.0</FileVersion>
     <EnableWindowsFormsHighDpi>true</EnableWindowsFormsHighDpi>
     <ApplicationIcon>amministrazione_new_logo.ico</ApplicationIcon> <!-- Abilita il supporto DPI alto -->
   </PropertyGroup>

@@ -42,7 +42,11 @@ Public Class FormInserimentoGuidato
             Using connection As New SQLiteConnection(connString)
                 connection.Open()
 
-                Dim query As String = "SELECT * FROM Documenti WHERE TipoPagamento = @TipoPagamento AND UtenteID = @UtenteID"
+                Dim query As String = "SELECT d.*, GROUP_CONCAT(a.NomeFile, '; ') AS Allegati " &
+                      "FROM Documenti d " &
+                      "LEFT JOIN Allegati a ON d.ID = a.DocumentoID " &
+                      "WHERE d.TipoPagamento = @TipoPagamento AND d.UtenteID = @UtenteID " &
+                         "GROUP BY d.ID"
                 Using command As New SQLiteCommand(query, connection)
                     command.Parameters.AddWithValue("@TipoPagamento", tipoPagamento)
                     command.Parameters.AddWithValue("@UtenteID", utenteID)
@@ -94,6 +98,10 @@ Public Class FormInserimentoGuidato
                         dgvDocumenti.DataSource = dt
 
                         ' Configura la colonna immagine
+                        ' Nascondi la colonna File (obsoleta)
+                        If dgvDocumenti.Columns.Contains("File") Then
+                            dgvDocumenti.Columns("File").Visible = False
+                        End If
                         If Not dgvDocumenti.Columns.Contains("IconaPagamento") Then
                             Dim imageColumn As New DataGridViewImageColumn()
                             imageColumn.Name = "IconaPagamento"
