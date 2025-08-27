@@ -136,20 +136,6 @@ Public Class FormNuovoDocumento
         End If
     End Sub
 
-    Private Sub btnAggiungiAllegato_Click(sender As Object, e As EventArgs) Handles btnAggiungiAllegato.Click
-        Using ofd As New OpenFileDialog()
-            ofd.Filter = "Tutti i file|*.*"
-            If ofd.ShowDialog() = DialogResult.OK Then
-                Dim fileName = Path.GetFileName(ofd.FileName)
-                Dim destPath = Path.Combine(documentsFolderPath, fileName)
-                If Not File.Exists(destPath) Then
-                    File.Copy(ofd.FileName, destPath)
-                End If
-                allegati.Add(fileName)
-                lstAllegati.Items.Add(fileName)
-            End If
-        End Using
-    End Sub
 
 
     Private Sub btnSalva_Click(sender As Object, e As EventArgs) Handles btnSalva.Click
@@ -657,19 +643,24 @@ Public Class FormNuovoDocumento
     End Sub
 
     ' Sposta l'allegato selezionato verso il basso
-    Private Sub btnAllegatoDown_Click(sender As Object, e As EventArgs) Handles btnAllegatoDown.Click
-        Dim idx = lstAllegati.SelectedIndex
-        If idx >= 0 AndAlso idx < lstAllegati.Items.Count - 1 Then
-            Dim item = lstAllegati.Items(idx)
-            lstAllegati.Items.RemoveAt(idx)
-            lstAllegati.Items.Insert(idx + 1, item)
-            lstAllegati.SelectedIndex = idx + 1
-
-            ' Aggiorna anche la lista allegati
-            Dim file = allegati(idx)
-            allegati.RemoveAt(idx)
-            allegati.Insert(idx + 1, file)
-        End If
+    Private Sub btnAggiungiAllegato_Click(sender As Object, e As EventArgs) Handles btnAggiungiAllegato.Click
+        Using ofd As New OpenFileDialog()
+            ofd.Filter = "Tutti i file|*.*"
+            ofd.Multiselect = True ' Permetti selezione multipla
+            If ofd.ShowDialog() = DialogResult.OK Then
+                For Each filePath In ofd.FileNames
+                    Dim fileName = Path.GetFileName(filePath)
+                    Dim destPath = Path.Combine(documentsFolderPath, fileName)
+                    If Not File.Exists(destPath) Then
+                        File.Copy(filePath, destPath)
+                    End If
+                    If Not allegati.Contains(fileName) Then
+                        allegati.Add(fileName)
+                        lstAllegati.Items.Add(fileName)
+                    End If
+                Next
+            End If
+        End Using
     End Sub
 
 
