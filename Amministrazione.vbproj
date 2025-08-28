@@ -104,9 +104,10 @@
 		
 	    Versione 8.4.2.0
 		-Implementazione della funzione allegati
+		-Controllo spese in evidenza
 	</Description>
-    <AssemblyVersion>8.4.2.1</AssemblyVersion>
-    <FileVersion>8.4.2.1</FileVersion>
+    <AssemblyVersion>8.4.2.2</AssemblyVersion>
+    <FileVersion>8.4.2.2</FileVersion>
     <EnableWindowsFormsHighDpi>true</EnableWindowsFormsHighDpi>
     <ApplicationIcon>amministrazione_new_logo.ico</ApplicationIcon> <!-- Abilita il supporto DPI alto -->
   </PropertyGroup>

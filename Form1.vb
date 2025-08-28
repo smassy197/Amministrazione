@@ -7,6 +7,7 @@ Imports System.Text
 Imports System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel
 Imports DocumentFormat.OpenXml.Spreadsheet
 Imports DocumentFormat.OpenXml.Wordprocessing
+Imports System.Windows.Forms.DataVisualization.Charting
 'Imports FirebaseAdmin
 'Imports FirebaseAdmin.Auth
 
@@ -87,7 +88,7 @@ Public Class Form1
 
 
         CheckForUpdate()
-
+        CaricaGraficoSpeseMeseCorrente()
 
     End Sub
 
@@ -881,32 +882,7 @@ Public Class Form1
         form2.ShowDialog()
     End Sub
 
-    Private Sub Form1_Resize(sender As Object, e As EventArgs) Handles MyBase.Resize
-        ' Aggiusta la posizione e le dimensioni dei controlli in base allo stato della finestra
-        If Me.WindowState = FormWindowState.Maximized Then
-            ' La finestra è a schermo intero
-            ' Regola la posizione e le dimensioni dei controlli per la modalità a schermo intero
-            ' Ad esempio, puoi ridistribuire i controlli e adattarli alle nuove dimensioni
-            DataGridView1.Width = Me.ClientSize.Width - 20 ' Aggiusta la larghezza
-            DataGridView1.Height = Me.ClientSize.Height - 400 ' Aggiusta l'altezza
 
-            ' E così via per gli altri controlli
-
-            ' Ridistribuisci il pulsante btnbackup
-            btnbackup.Location = New Point(Me.ClientSize.Width - btnbackup.Width - 10, Me.ClientSize.Height - btnbackup.Height - 600)
-            btnShowAll.Location = New Point(Me.ClientSize.Width - btnShowAll.Width - 150, Me.ClientSize.Height - btnShowAll.Height - 600)
-
-        Else
-            ' La finestra è in modalità normale
-            ' Aggiusta la posizione e le dimensioni dei controlli per la modalità normale
-            ' Ad esempio, riporta i controlli alle posizioni e alle dimensioni originali
-            DataGridView1.Width = 400 ' Larghezza originale
-            DataGridView1.Height = 272 ' Altezza originale
-
-
-            ' E così via per gli altri controlli
-        End If
-    End Sub
 
     Private Sub btnOpenForm3_Click(sender As Object, e As EventArgs) Handles btnOpenForm3.Click
         Me.Hide()
@@ -1016,5 +992,41 @@ Public Class Form1
         File.WriteAllText(filePath, sb.ToString(), Encoding.UTF8)
     End Sub
 
+    Private Sub CaricaGraficoSpeseMeseCorrente()
+        Dim databasePath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione", "amministrazione.db")
+        Dim connString As String = "Data Source=" & databasePath & ";Version=3;"
+
+        Dim oggi As Date = Date.Today
+        Dim primoGiornoMese As Date = New Date(oggi.Year, oggi.Month, 1)
+        Dim ultimoGiornoMese As Date = New Date(oggi.Year, oggi.Month, Date.DaysInMonth(oggi.Year, oggi.Month))
+        Dim totaleSpese As Double = 0
+
+        Using conn As New SQLiteConnection(connString)
+            conn.Open()
+            Using cmd As New SQLiteCommand("SELECT SUM(Adebito) FROM Movimenti WHERE Data BETWEEN @start AND @end", conn)
+                cmd.Parameters.AddWithValue("@start", primoGiornoMese.ToString("yyyy-MM-dd"))
+                cmd.Parameters.AddWithValue("@end", ultimoGiornoMese.ToString("yyyy-MM-dd"))
+                Dim result = cmd.ExecuteScalar()
+                If result IsNot Nothing AndAlso Not IsDBNull(result) Then
+                    totaleSpese = Convert.ToDouble(result)
+                End If
+            End Using
+        End Using
+
+        ChartSpese.Series.Clear()
+        ChartSpese.Titles.Clear()
+        ChartSpese.Titles.Add("Spese " & primoGiornoMese.ToString("MMMM yyyy"))
+        Dim serie As New DataVisualization.Charting.Series("Spese")
+        serie.ChartType = DataVisualization.Charting.SeriesChartType.Column
+
+        ' Etichetta X: nome del mese, una sola colonna
+        serie.Points.AddXY(primoGiornoMese.ToString("MMMM"), totaleSpese)
+
+
+        ChartSpese.Series.Add(serie)
+    End Sub
+    Private Sub ChartSpese_Click(sender As Object, e As EventArgs) Handles ChartSpese.Click
+
+    End Sub
 End Class
 
