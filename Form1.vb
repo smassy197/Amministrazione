@@ -463,6 +463,7 @@ Public Class Form1
         UpdateLabels()
         LoadDataIntoComboboxes()
         HighlightDatesWithDocuments()
+        CaricaGraficoSpeseMeseCorrente()
         MonthCalendar1.UpdateBoldedDates()
         txtAcredito.Text = ""
         txtAdebito.Text = ""
@@ -1018,12 +1019,11 @@ Public Class Form1
         ChartSpese.Titles.Add("Spese " & primoGiornoMese.ToString("MMMM yyyy"))
         Dim serie As New DataVisualization.Charting.Series("Spese")
         serie.ChartType = DataVisualization.Charting.SeriesChartType.Column
-
-        ' Etichetta X: nome del mese, una sola colonna
         serie.Points.AddXY(primoGiornoMese.ToString("MMMM"), totaleSpese)
-
-
         ChartSpese.Series.Add(serie)
+
+        ' Aggiorna la label con l’importo del mese corrente
+        lblSpeseMeseCorrente.Text = $"{totaleSpese:F2} €"
     End Sub
     Private Sub ChartSpese_Click(sender As Object, e As EventArgs) Handles ChartSpese.Click
 

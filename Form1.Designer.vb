@@ -57,6 +57,7 @@ Partial Class Form1
         Panel1 = New Panel()
         btnExport = New Button()
         ChartSpese = New DataVisualization.Charting.Chart()
+        lblSpeseMeseCorrente = New Label()
         CType(DataGridView1, ComponentModel.ISupportInitialize).BeginInit()
         Panel1.SuspendLayout()
         CType(ChartSpese, ComponentModel.ISupportInitialize).BeginInit()
@@ -376,15 +377,25 @@ Partial Class Form1
         Series1.Legend = "Legend1"
         Series1.Name = "Series1"
         ChartSpese.Series.Add(Series1)
-        ChartSpese.Size = New Size(319, 167)
+        ChartSpese.Size = New Size(319, 151)
         ChartSpese.TabIndex = 35
         ChartSpese.Text = "Chart1"
+        ' 
+        ' lblSpeseMeseCorrente
+        ' 
+        lblSpeseMeseCorrente.AutoSize = True
+        lblSpeseMeseCorrente.Location = New Point(1085, 153)
+        lblSpeseMeseCorrente.Name = "lblSpeseMeseCorrente"
+        lblSpeseMeseCorrente.Size = New Size(41, 15)
+        lblSpeseMeseCorrente.TabIndex = 36
+        lblSpeseMeseCorrente.Text = "Label7"
         ' 
         ' Form1
         ' 
         AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
         ClientSize = New Size(1196, 637)
+        Controls.Add(lblSpeseMeseCorrente)
         Controls.Add(ChartSpese)
         Controls.Add(btnExport)
         Controls.Add(Panel1)
@@ -458,4 +469,5 @@ Partial Class Form1
     Friend WithEvents Panel1 As Panel
     Friend WithEvents btnExport As Button
     Friend WithEvents ChartSpese As DataVisualization.Charting.Chart
+    Friend WithEvents lblSpeseMeseCorrente As Label
 End Class

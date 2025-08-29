@@ -106,8 +106,8 @@
 		-Implementazione della funzione allegati
 		-Controllo spese in evidenza
 	</Description>
-    <AssemblyVersion>8.4.2.2</AssemblyVersion>
-    <FileVersion>8.4.2.2</FileVersion>
+    <AssemblyVersion>8.4.2.3</AssemblyVersion>
+    <FileVersion>8.4.2.3</FileVersion>
     <EnableWindowsFormsHighDpi>true</EnableWindowsFormsHighDpi>
     <ApplicationIcon>amministrazione_new_logo.ico</ApplicationIcon> <!-- Abilita il supporto DPI alto -->
   </PropertyGroup>
