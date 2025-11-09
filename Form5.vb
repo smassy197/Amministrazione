@@ -1,7 +1,7 @@
 ﻿Imports System.ComponentModel
 Imports System.IO
 Imports System.Text
-Imports System.Data.SQLite
+Imports Microsoft.Data.Sqlite
 Imports DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing
 Imports DocumentFormat.OpenXml.Packaging
 Imports System.Runtime.InteropServices
@@ -24,7 +24,7 @@ Public Class Form5
 
     ' Path to your SQLite database file
     Dim databasePath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione", "amministrazione.db")
-    Dim connString As String = "Data Source=" & databasePath & ";Version=3;"
+    Dim connString As String = "Data Source=" & databasePath
 
     ' Variabile per tenere traccia del percorso del file aperto
     Private currentFilePath As String = String.Empty
@@ -35,7 +35,7 @@ Public Class Form5
 
 
     Private Sub Form5_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        'ApriConsole()
+        ' ApriConsole()
         InitializeComponents()
         InitializeFileList()
         richTextBoxDocument.DetectUrls = True ' Abilita il rilevamento dei link

@@ -1,6 +1,6 @@
-﻿Imports System.Data.SQLite
-Imports System.IO
+﻿Imports Microsoft.Data.Sqlite
 Imports System.Diagnostics
+Imports System.IO
 
 Public Class FormInserimentoGuidato
     Private connString As String
@@ -14,182 +14,214 @@ Public Class FormInserimentoGuidato
 
     ' Modifica il costruttore per accettare anche l'ID utente
     Public Sub New(connString As String, tipoPagamento As String, utenteID As Integer)
+        Console.WriteLine("[DEBUG] Inizializzazione form. Parametri ricevuti → connString: " & connString & ", tipoPagamento: " & tipoPagamento & ", utenteID: " & utenteID)
+
         InitializeComponent()
+
         Me.connString = connString
         Me.tipoPagamento = tipoPagamento
         Me.utenteID = utenteID
-        ' Imposta il valore della TextBox per ricordare l'utente
+
         txtUtente.Text = $"Utente selezionato: {utenteID}"
         txtTipoPagamento.Text = $"Tipo pagamento selezionato: {tipoPagamento}"
+
+        Console.WriteLine("[DEBUG] txtUtente e txtTipoPagamento impostati.")
     End Sub
 
+
     Private Sub FormInserimentoGuidato_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        Console.WriteLine("[DEBUG] FormInserimentoGuidato caricato correttamente.")
 
-
-
-        Debug.WriteLine("Il form è stato caricato correttamente.")
-
-        ' Mostra i documenti esistenti per il tipo selezionato
+        Console.WriteLine("[DEBUG] Avvio caricamento documenti per tipo pagamento e utente.")
         LoadDocumentsForTipoPagamentoAndUtente()
 
-
-        ' Carica il riepilogo delle scadenze
+        Console.WriteLine("[DEBUG] Avvio caricamento riepilogo scadenze.")
         CaricaRiepilogoScadenze()
     End Sub
 
-    Private Sub LoadDocumentsForTipoPagamentoAndUtente()
-        Try
-            Using connection As New SQLiteConnection(connString)
-                connection.Open()
 
-                Dim query As String = "SELECT d.*, GROUP_CONCAT(a.NomeFile, '; ') AS Allegati " &
-                      "FROM Documenti d " &
-                      "LEFT JOIN Allegati a ON d.ID = a.DocumentoID " &
-                      "WHERE d.TipoPagamento = @TipoPagamento AND d.UtenteID = @UtenteID " &
-                         "GROUP BY d.ID"
-                Using command As New SQLiteCommand(query, connection)
+    Private Sub LoadDocumentsForTipoPagamentoAndUtente()
+        Console.WriteLine("[DEBUG] Avvio caricamento documenti per tipo pagamento: " & tipoPagamento & ", utenteID: " & utenteID)
+
+        Try
+            Using connection As New Microsoft.Data.Sqlite.SqliteConnection(connString)
+                connection.Open()
+                Console.WriteLine("[DEBUG] Connessione al database aperta.")
+
+                Dim query As String = "
+                SELECT d.ID, d.UtenteID, d.Data, d.AnnoRiferimento, d.TipoPagamento, d.Importo, d.File, d.Note, d.Scadenza, d.StatoPagamento,
+                       GROUP_CONCAT(a.NomeFile, '; ') AS Allegati
+                FROM Documenti d
+                LEFT JOIN Allegati a ON d.ID = a.DocumentoID
+                WHERE d.TipoPagamento = @TipoPagamento AND d.UtenteID = @UtenteID
+                GROUP BY d.ID"
+
+                Using command As New Microsoft.Data.Sqlite.SqliteCommand(query, connection)
                     command.Parameters.AddWithValue("@TipoPagamento", tipoPagamento)
                     command.Parameters.AddWithValue("@UtenteID", utenteID)
 
-                    Using reader As SQLiteDataReader = command.ExecuteReader()
+                    Using reader As Microsoft.Data.Sqlite.SqliteDataReader = command.ExecuteReader()
                         Dim dt As New DataTable()
-                        dt.Load(reader)
+                        dt.Columns.Add("ID", GetType(Integer))
+                        dt.Columns.Add("UtenteID", GetType(Integer))
+                        dt.Columns.Add("Data", GetType(String))
+                        dt.Columns.Add("AnnoRiferimento", GetType(Integer))
+                        dt.Columns.Add("TipoPagamento", GetType(String))
+                        dt.Columns.Add("Importo", GetType(Double))
+                        dt.Columns.Add("File", GetType(String))
+                        dt.Columns.Add("Note", GetType(String))
+                        dt.Columns.Add("Scadenza", GetType(String))
+                        dt.Columns.Add("StatoPagamento", GetType(String))
+                        dt.Columns.Add("Allegati", GetType(String))
+                        dt.Columns.Add("IconaPagamento", GetType(Image))
 
-                        ' Aggiungi una colonna immagine per lo stato del pagamento
-                        If Not dt.Columns.Contains("IconaPagamento") Then
-                            dt.Columns.Add("IconaPagamento", GetType(Image))
-                        End If
-
-                        ' Ottieni il percorso della cartella delle icone
                         Dim iconFolderPath As String = Path.Combine(Application.StartupPath, "Icons")
+                        Dim iconaPagato As Image = New Bitmap(Image.FromFile(Path.Combine(iconFolderPath, "check.png")), New Size(20, 20))
+                        Dim iconaDaPagare As Image = New Bitmap(Image.FromFile(Path.Combine(iconFolderPath, "attention.png")), New Size(20, 20))
+                        Dim iconaWhite As Image = New Bitmap(Image.FromFile(Path.Combine(iconFolderPath, "white.png")), New Size(20, 20))
+                        Dim iconaTimer As Image = New Bitmap(Image.FromFile(Path.Combine(iconFolderPath, "timer.png")), New Size(20, 20))
 
-                        ' Carica le icone dai percorsi assoluti
-                        Dim originalIconPagato As Image = Image.FromFile(Path.Combine(iconFolderPath, "check.png"))
-                        Dim iconaPagato As Image = New Bitmap(originalIconPagato, New Size(20, 20)) ' Ridimensiona a 20x20 pixel
+                        While reader.Read()
+                            Dim row As DataRow = dt.NewRow()
+                            row("ID") = Convert.ToInt32(reader("ID"))
+                            row("UtenteID") = Convert.ToInt32(reader("UtenteID"))
+                            row("Data") = reader("Data").ToString()
+                            row("AnnoRiferimento") = If(Integer.TryParse(reader("AnnoRiferimento").ToString(), Nothing), Convert.ToInt32(reader("AnnoRiferimento")), 0)
+                            row("TipoPagamento") = reader("TipoPagamento").ToString()
+                            row("File") = reader("File").ToString()
+                            row("Note") = reader("Note").ToString()
+                            row("Scadenza") = reader("Scadenza").ToString()
+                            row("StatoPagamento") = reader("StatoPagamento").ToString()
+                            row("Allegati") = reader("Allegati").ToString()
 
-                        Dim originalIconDaPagare As Image = Image.FromFile(Path.Combine(iconFolderPath, "attention.png"))
-                        Dim iconaDaPagare As Image = New Bitmap(originalIconDaPagare, New Size(20, 20)) ' Ridimensiona a 20x20 pixel
+                            Dim importoValue As Double
+                            If Double.TryParse(reader("Importo").ToString(), importoValue) Then
+                                row("Importo") = importoValue
+                            Else
+                                row("Importo") = 0
+                            End If
 
-                        Dim originalIconWhite As Image = Image.FromFile(Path.Combine(iconFolderPath, "white.png"))
-                        Dim iconaWhite As Image = New Bitmap(originalIconWhite, New Size(20, 20)) ' Ridimensiona a 20x20 pixel
-
-                        Dim originalIconTimer As Image = Image.FromFile(Path.Combine(iconFolderPath, "timer.png"))
-                        Dim iconaTimer As Image = New Bitmap(originalIconTimer, New Size(20, 20)) ' Ridimensiona a 20x20 pixel
-
-                        ' Assegna le icone in base allo stato del pagamento e alla scadenza
-                        For Each row As DataRow In dt.Rows
                             If Not IsDBNull(row("Scadenza")) AndAlso Not String.IsNullOrEmpty(row("Scadenza").ToString()) Then
-                                ' Assegna l'icona timer.png se la scadenza è compilata
                                 row("IconaPagamento") = iconaTimer
                             ElseIf row("StatoPagamento").ToString() = "Pagato" Then
                                 row("IconaPagamento") = iconaPagato
                             ElseIf row("StatoPagamento").ToString() = "Da Pagare" Then
                                 row("IconaPagamento") = iconaDaPagare
                             Else
-                                ' Assegna l'icona white.png se lo stato non è specificato
                                 row("IconaPagamento") = iconaWhite
                             End If
-                        Next
 
+                            dt.Rows.Add(row)
+                        End While
 
-
-
-                        ' Imposta la DataGridView
                         dgvDocumenti.DataSource = dt
+                        Console.WriteLine("[DEBUG] Documenti caricati: " & dt.Rows.Count)
 
-                        ' Configura la colonna immagine
-                        ' Nascondi la colonna File (obsoleta)
                         If dgvDocumenti.Columns.Contains("File") Then
                             dgvDocumenti.Columns("File").Visible = False
                         End If
+
                         If Not dgvDocumenti.Columns.Contains("IconaPagamento") Then
-                            Dim imageColumn As New DataGridViewImageColumn()
-                            imageColumn.Name = "IconaPagamento"
-                            imageColumn.HeaderText = "Stato"
-                            imageColumn.ImageLayout = DataGridViewImageCellLayout.Zoom
+                            Dim imageColumn As New DataGridViewImageColumn() With {
+                            .Name = "IconaPagamento",
+                            .HeaderText = "Stato",
+                            .ImageLayout = DataGridViewImageCellLayout.Zoom
+                        }
                             dgvDocumenti.Columns.Insert(0, imageColumn)
+                            Console.WriteLine("[DEBUG] Colonna icona pagamento inserita.")
                         End If
                     End Using
                 End Using
             End Using
         Catch ex As Exception
             MessageBox.Show("Errore durante il caricamento dei documenti: " & ex.Message)
+            Console.WriteLine("[DEBUG] Errore caricamento documenti: " & ex.ToString())
         End Try
     End Sub
 
+
     Private Sub btnAggiungiDocumento_Click(sender As Object, e As EventArgs) Handles btnAggiungiDocumento.Click
-        ' Logica per aggiungere un nuovo documento
+        Console.WriteLine("[DEBUG] Click su Aggiungi Documento.")
         Dim nuovoDocumentoForm As New FormNuovoDocumento(connString, tipoPagamento, utenteID)
         nuovoDocumentoForm.ShowDialog()
 
-        ' Ricarica i documenti dopo l'inserimento
+        Console.WriteLine("[DEBUG] Documento inserito. Ricarico dati.")
         LoadDocumentsForTipoPagamentoAndUtente()
         CaricaRiepilogoScadenze()
     End Sub
 
+
     Private Sub btnModifica_Click(sender As Object, e As EventArgs) Handles btnModifica.Click
-        ' Verifica che una riga sia selezionata
+        Console.WriteLine("[DEBUG] Click su Modifica Documento.")
+
         If dgvDocumenti.SelectedRows.Count = 0 Then
             MessageBox.Show("Seleziona una riga da modificare.", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Console.WriteLine("[DEBUG] Nessuna riga selezionata.")
             Return
         End If
 
-        ' Ottieni l'ID del documento selezionato
         Dim selectedRow As DataGridViewRow = dgvDocumenti.SelectedRows(0)
         If selectedRow.Cells("ID").Value Is Nothing OrElse selectedRow.Cells("File").Value Is Nothing Then
             MessageBox.Show("La riga selezionata non è valida.", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Console.WriteLine("[DEBUG] Riga selezionata non valida.")
             Return
         End If
-        Dim documentId As Integer = Convert.ToInt32(selectedRow.Cells("ID").Value)
 
-        ' Apri FormNuovoDocumento in modalità modifica
+        Dim documentId As Integer = Convert.ToInt32(selectedRow.Cells("ID").Value)
+        Console.WriteLine("[DEBUG] Documento da modificare. ID: " & documentId)
+
         Dim modificaForm As New FormNuovoDocumento(connString, tipoPagamento, utenteID, documentId)
         modificaForm.ShowDialog()
 
-        ' Ricarica i documenti dopo la modifica
+        Console.WriteLine("[DEBUG] Documento modificato. Ricarico dati.")
         LoadDocumentsForTipoPagamentoAndUtente()
         CaricaRiepilogoScadenze()
     End Sub
+
 
 
 
 
     Private Sub btnElimina_Click(sender As Object, e As EventArgs) Handles btnElimina.Click
-        ' Verifica che una riga sia selezionata
+        Console.WriteLine("[DEBUG] Click su Elimina Documento.")
+
         If dgvDocumenti.SelectedRows.Count = 0 Then
             MessageBox.Show("Seleziona una riga da eliminare.", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Console.WriteLine("[DEBUG] Nessuna riga selezionata.")
             Return
         End If
 
         Dim selectedRow = dgvDocumenti.SelectedRows(0)
         If selectedRow.Cells("ID").Value Is Nothing OrElse selectedRow.Cells("File").Value Is Nothing Then
             MessageBox.Show("La riga selezionata non è valida.", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Console.WriteLine("[DEBUG] Riga selezionata non valida.")
             Return
         End If
+
         Dim documentId = Convert.ToInt32(selectedRow.Cells("ID").Value)
         Dim fileName = selectedRow.Cells("File").Value.ToString
+        Console.WriteLine("[DEBUG] Documento da eliminare. ID: " & documentId & ", File: " & fileName)
 
-        ' Conferma l'eliminazione
         Dim result = MessageBox.Show("Sei sicuro di voler eliminare questo documento?", "Conferma Eliminazione", MessageBoxButtons.YesNo, MessageBoxIcon.Warning)
         If result = DialogResult.Yes Then
             Try
-                ' Elimina il file dal file system
                 Dim filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione", "Documenti", fileName)
                 If File.Exists(filePath) Then
                     File.Delete(filePath)
-                    Debug.WriteLine($"File eliminato: {filePath}")
+                    Console.WriteLine("[DEBUG] File eliminato: " & filePath)
                 Else
-                    Debug.WriteLine($"File non trovato: {filePath}")
+                    Console.WriteLine("[DEBUG] File non trovato: " & filePath)
                 End If
 
-                ' Elimina il record dal database
-                Using connection As New SQLiteConnection(connString)
+                Using connection As New Microsoft.Data.Sqlite.SqliteConnection(connString)
                     connection.Open()
+                    Console.WriteLine("[DEBUG] Connessione al database aperta.")
 
                     Dim query = "DELETE FROM Documenti WHERE ID = @ID"
-                    Using command As New SQLiteCommand(query, connection)
+                    Using command As New Microsoft.Data.Sqlite.SqliteCommand(query, connection)
                         command.Parameters.AddWithValue("@ID", documentId)
                         command.ExecuteNonQuery()
+                        Console.WriteLine("[DEBUG] Record eliminato dal database. ID: " & documentId)
                     End Using
                 End Using
 
@@ -198,81 +230,85 @@ Public Class FormInserimentoGuidato
                 CaricaRiepilogoScadenze()
             Catch ex As Exception
                 MessageBox.Show("Errore durante l'eliminazione del documento: " & ex.Message)
+                Console.WriteLine("[DEBUG] Errore eliminazione documento: " & ex.ToString())
             End Try
+        Else
+            Console.WriteLine("[DEBUG] Eliminazione annullata dall'utente.")
         End If
     End Sub
 
     Private Sub btnApriFile_Click(sender As Object, e As EventArgs) Handles btnApriFile.Click
-        ' Verifica che una riga sia selezionata
+        Console.WriteLine("[DEBUG] Click su Apri File.")
+
         If dgvDocumenti.SelectedRows.Count = 0 Then
             Dim errorMessage As String = "Seleziona una riga per aprire il file."
             MessageBox.Show(errorMessage, "Errore", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-            Debug.WriteLine(errorMessage)
+            Console.WriteLine("[DEBUG] " & errorMessage)
             Return
         End If
 
         Dim selectedRow As DataGridViewRow = dgvDocumenti.SelectedRows(0)
         If selectedRow.Cells("ID").Value Is Nothing OrElse selectedRow.Cells("File").Value Is Nothing Then
             MessageBox.Show("La riga selezionata non è valida.", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Console.WriteLine("[DEBUG] Riga selezionata non valida.")
             Return
         End If
-        Dim fileName As String = selectedRow.Cells("File").Value.ToString()
 
-        ' Verifica che il file esista
+        Dim fileName As String = selectedRow.Cells("File").Value.ToString()
         Dim filePath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione", "Documenti", fileName)
+        Console.WriteLine("[DEBUG] Percorso file: " & filePath)
+
         If Not File.Exists(filePath) Then
             Dim errorMessage As String = $"Il file selezionato non esiste: {filePath}"
             MessageBox.Show(errorMessage, "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
-            Debug.WriteLine(errorMessage)
+            Console.WriteLine("[DEBUG] " & errorMessage)
             Return
         End If
 
-        ' Apri il file
         Try
-            Dim psi As New ProcessStartInfo()
-            psi.FileName = filePath
-            psi.UseShellExecute = True ' Usa l'applicazione predefinita per aprire il file
+            Dim psi As New ProcessStartInfo() With {
+            .FileName = filePath,
+            .UseShellExecute = True
+        }
             Process.Start(psi)
+            Console.WriteLine("[DEBUG] File aperto correttamente.")
         Catch ex As System.ComponentModel.Win32Exception
             Dim errorMessage As String = $"Errore durante l'apertura del file: {ex.Message}. Verifica che esista un'applicazione predefinita per aprire il file."
             MessageBox.Show(errorMessage, "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
-            Debug.WriteLine(errorMessage)
+            Console.WriteLine("[DEBUG] " & errorMessage)
         Catch ex As Exception
             Dim errorMessage As String = $"Errore imprevisto durante l'apertura del file: {ex.Message}"
             MessageBox.Show(errorMessage, "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
-            Debug.WriteLine(errorMessage)
+            Console.WriteLine("[DEBUG] " & errorMessage)
         End Try
     End Sub
 
     Private Sub FormInserimentoGuidato_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
-        ' Verifica se Form3 è aperto
+        Console.WriteLine("[DEBUG] FormInserimentoGuidato chiuso. Verifica presenza di Form3.")
+
         For Each form As Form In Application.OpenForms
             If TypeOf form Is Form3 Then
-                'richama il metodo per aggiornare il reset
+                Console.WriteLine("[DEBUG] Form3 rilevato. Eseguo aggiornamento controlli.")
                 DirectCast(form, Form3).ResetFormControls()
-                ' Richiama il metodo per aggiornare la DataGridView
                 DirectCast(form, Form3).AggiornaDataGridView()
-
-                ' Richiama il metodo per aggiornare il MonthCalendar
                 DirectCast(form, Form3).HighlightDatesWithDocuments()
-
-
                 Exit For
             End If
         Next
     End Sub
 
+
     'timer scadenza e menu contestuale-----------------------------------------------------------------------
     Private Sub TimerScadenze_Tick(sender As Object, e As EventArgs) Handles TimerScadenze.Tick
         Dim now As DateTime = DateTime.Now
         Dim righeScadute As Integer = 0
+        Console.WriteLine("[DEBUG] TimerScadenze_Tick avviato. Ora: " & now.ToString("yyyy-MM-dd HH:mm:ss"))
 
         For Each row As DataGridViewRow In dgvDocumenti.Rows
             Dim scadenzaCell = row.Cells("Scadenza")
             Dim statoCell = row.Cells("StatoPagamento")
             Dim scadenzaStr As String = scadenzaCell.Value?.ToString()
 
-            ' Escludi le righe con StatoPagamento = "Scaduto"
             If statoCell.Value IsNot Nothing AndAlso statoCell.Value.ToString().Trim().ToLower() = "scaduto" Then
                 scadenzaCell.Style.BackColor = Color.White
                 Continue For
@@ -282,6 +318,8 @@ Public Class FormInserimentoGuidato
                 Dim scadenza As DateTime
                 If DateTime.TryParse(scadenzaStr, scadenza) Then
                     Dim giorniRimanenti As Integer = (scadenza - now).Days
+                    Console.WriteLine($"[DEBUG] Documento con scadenza {scadenza:yyyy-MM-dd} → {giorniRimanenti} giorni rimanenti.")
+
                     Select Case giorniRimanenti
                         Case <= 10
                             scadenzaCell.Style.BackColor = Color.Red
@@ -293,42 +331,41 @@ Public Class FormInserimentoGuidato
                         Case Else
                             scadenzaCell.Style.BackColor = Color.White
                     End Select
+                Else
+                    Console.WriteLine("[DEBUG] Scadenza non valida: " & scadenzaStr)
                 End If
             Else
                 scadenzaCell.Style.BackColor = Color.White
             End If
         Next
 
-        ' Aggiorna lblNotifica e picNotifica
-        If righeScadute > 0 Then
-            lblNotifica.Text = righeScadute.ToString()
-            lblNotifica.Visible = True
-            picNotifica.Visible = True
-        Else
-            lblNotifica.Visible = False
-            picNotifica.Visible = False
-        End If
         lblNotifica.Font = New Font(lblNotifica.Font, FontStyle.Bold)
         lblNotifica.ForeColor = Color.Red
         lblNotifica.Text = righeScadute.ToString()
         lblNotifica.Visible = (righeScadute > 0)
+        picNotifica.Visible = (righeScadute > 0)
+
+        Console.WriteLine("[DEBUG] Righe scadute: " & righeScadute)
     End Sub
+
     '--------------------------------------------------------------------------------------------------------
 
     Private Sub CaricaRiepilogoScadenze()
-        Try
-            Using connection As New SQLiteConnection(connString)
-                connection.Open()
+        Console.WriteLine("[DEBUG] Avvio CaricaRiepilogoScadenze.")
 
-                ' Query per ottenere le scadenze imminenti
+        Try
+            Using connection As New Microsoft.Data.Sqlite.SqliteConnection(connString)
+                connection.Open()
+                Console.WriteLine("[DEBUG] Connessione al database aperta.")
+
                 Dim query As String = "SELECT ID, Note, Scadenza, TipoPagamento, UtenteID FROM Documenti WHERE Scadenza IS NOT NULL AND Scadenza >= @Oggi ORDER BY Scadenza ASC"
 
-                Using command As New SQLiteCommand(query, connection)
+                Using command As New Microsoft.Data.Sqlite.SqliteCommand(query, connection)
                     command.Parameters.AddWithValue("@Oggi", DateTime.Now.ToString("yyyy-MM-dd"))
 
-                    Using reader As SQLiteDataReader = command.ExecuteReader()
-                        ' Pulisci il controllo prima di aggiungere nuovi dati
+                    Using reader As Microsoft.Data.Sqlite.SqliteDataReader = command.ExecuteReader()
                         lstRiepilogoScadenze.Items.Clear()
+                        Console.WriteLine("[DEBUG] Riepilogo scadenze pulito.")
 
                         While reader.Read()
                             Dim id As Integer = Convert.ToInt32(reader("ID"))
@@ -338,45 +375,52 @@ Public Class FormInserimentoGuidato
                             Dim utenteId As Integer = Convert.ToInt32(reader("UtenteID"))
                             Dim giorniRimanenti As Integer = (scadenza - DateTime.Now).Days
 
-                            ' Aggiungi un elemento al riepilogo con l'ID utente incluso
-                            lstRiepilogoScadenze.Items.Add($"{id} - {scadenza:dd/MM/yyyy} - {nota} ({giorniRimanenti} giorni rimanenti) - {tipoPagamento} - Utente: {utenteId}")
+                            Dim riepilogo As String = $"{id} - {scadenza:dd/MM/yyyy} - {nota} ({giorniRimanenti} giorni rimanenti) - {tipoPagamento} - Utente: {utenteId}"
+                            lstRiepilogoScadenze.Items.Add(riepilogo)
+                            Console.WriteLine("[DEBUG] Aggiunto riepilogo: " & riepilogo)
                         End While
-
-
-
                     End Using
                 End Using
             End Using
         Catch ex As Exception
             MessageBox.Show("Errore durante il caricamento del riepilogo delle scadenze: " & ex.Message)
+            Console.WriteLine("[DEBUG] Errore caricamento scadenze: " & ex.ToString())
         End Try
     End Sub
 
     Private Sub lstRiepilogoScadenze_DoubleClick(sender As Object, e As EventArgs) Handles lstRiepilogoScadenze.DoubleClick
-        ' Verifica che un elemento sia selezionato
+        Console.WriteLine("[DEBUG] Doppio click su riepilogo scadenze.")
+
         If lstRiepilogoScadenze.SelectedItem IsNot Nothing Then
-            ' Ottieni il testo dell'elemento selezionato
             Dim selectedItem As String = lstRiepilogoScadenze.SelectedItem.ToString()
+            Console.WriteLine("[DEBUG] Elemento selezionato: " & selectedItem)
 
-            ' Estrai l'ID, il tipo di pagamento e l'ID utente
-            ' Supponiamo che il formato sia "ID - dd/MM/yyyy - Nota (X giorni rimanenti) - TipoPagamento - Utente: UtenteID"
-            Dim parts As String() = selectedItem.Split("-"c)
-            Dim id As Integer = Convert.ToInt32(parts(0).Trim())
-            Dim tipoPagamento As String = parts(parts.Length - 2).Trim()
-            Dim utenteId As Integer = Convert.ToInt32(parts.Last().Replace("Utente:", "").Trim())
+            Try
+                Dim parts As String() = selectedItem.Split("-"c)
+                Dim id As Integer = Convert.ToInt32(parts(0).Trim())
+                Dim tipoPagamento As String = parts(parts.Length - 2).Trim()
+                Dim utenteId As Integer = Convert.ToInt32(parts.Last().Replace("Utente:", "").Trim())
 
-            ' Chiedi conferma all'utente
-            Dim result As DialogResult = MessageBox.Show($"Vuoi aprire la scheda per il pagamento associato a: {tipoPagamento} dell'utente {utenteId}?", "Conferma", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+                Console.WriteLine($"[DEBUG] ID: {id}, TipoPagamento: {tipoPagamento}, UtenteID: {utenteId}")
 
-            If result = DialogResult.Yes Then
-                ' Apri una nuova istanza di FormInserimentoGuidato per il tipo di pagamento e l'utente corretto
-                Dim nuovoForm As New FormInserimentoGuidato(connString, tipoPagamento, utenteId)
-                nuovoForm.Show()
+                Dim result As DialogResult = MessageBox.Show($"Vuoi aprire la scheda per il pagamento associato a: {tipoPagamento} dell'utente {utenteId}?", "Conferma", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
 
-                ' Apri l'istanza di modifica per il pagamento specifico
-                Dim modificaForm As New FormNuovoDocumento(connString, tipoPagamento, utenteId, id)
-                modificaForm.ShowDialog()
-            End If
+                If result = DialogResult.Yes Then
+                    Console.WriteLine("[DEBUG] Conferma ricevuta. Apro FormInserimentoGuidato e FormNuovoDocumento.")
+                    Dim nuovoForm As New FormInserimentoGuidato(connString, tipoPagamento, utenteId)
+                    nuovoForm.Show()
+
+                    Dim modificaForm As New FormNuovoDocumento(connString, tipoPagamento, utenteId, id)
+                    modificaForm.ShowDialog()
+                Else
+                    Console.WriteLine("[DEBUG] Apertura annullata dall'utente.")
+                End If
+            Catch ex As Exception
+                MessageBox.Show("Errore nell'interpretazione dell'elemento selezionato: " & ex.Message, "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Console.WriteLine("[DEBUG] Errore parsing elemento: " & ex.ToString())
+            End Try
+        Else
+            Console.WriteLine("[DEBUG] Nessun elemento selezionato.")
         End If
     End Sub
 

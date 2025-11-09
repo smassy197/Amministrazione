@@ -1,7 +1,6 @@
-﻿Imports System.Data.SQLite
-Imports System.IO
+﻿Imports System.IO
 Imports System.IO.Compression
-
+Imports Microsoft.Data.Sqlite
 Public Class Form2
     Private connectionString As String
     Private sqliteConnection As SQLiteConnection
@@ -9,7 +8,7 @@ Public Class Form2
     Private Sub Form2_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         ' Percorso del database
         Dim databasePath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione", "amministrazione.db")
-        connectionString = $"Data Source={databasePath};Version=3;"
+        connectionString = $"Data Source={databasePath}"
 
         ' Carica la tabella sqlite_sequence nella DataGridView
         LoadSqliteSequence()
@@ -19,207 +18,277 @@ Public Class Form2
     End Sub
 
     Private Sub LoadSqliteSequence()
+        Console.WriteLine("[DEBUG] Avvio caricamento tabella sqlite_sequence.")
+
         Try
-            Using sqliteConnection = New SQLiteConnection(connectionString)
+            Using sqliteConnection As New SqliteConnection(connectionString)
                 sqliteConnection.Open()
+                Console.WriteLine("[DEBUG] Connessione aperta.")
 
-                ' Query per recuperare la tabella sqlite_sequence
-                Dim query As String = "SELECT * FROM sqlite_sequence"
-                Dim adapter As New SQLiteDataAdapter(query, sqliteConnection)
-                Dim dataTable As New DataTable()
+                Dim query As String = "SELECT name, seq FROM sqlite_sequence"
+                Console.WriteLine("[DEBUG] Query: " & query)
 
-                adapter.Fill(dataTable)
-                dgvSqliteSequence.DataSource = dataTable
+                Using cmd As New SqliteCommand(query, sqliteConnection)
+                    Using reader As SqliteDataReader = cmd.ExecuteReader()
+                        Dim dataTable As New DataTable()
+                        dataTable.Load(reader)
+                        Console.WriteLine("[DEBUG] Righe caricate: " & dataTable.Rows.Count)
+
+                        dgvSqliteSequence.DataSource = dataTable
+                        Console.WriteLine("[DEBUG] DataGridView aggiornato.")
+                    End Using
+                End Using
             End Using
         Catch ex As Exception
+            Console.WriteLine("[DEBUG] Errore: " & ex.ToString())
             MessageBox.Show($"Errore durante il caricamento della tabella sqlite_sequence: {ex.Message}", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
-    Private Sub LoadLogFile()
-        Try
-            ' Percorso del file log.txt nella stessa directory del database
-            Dim logFilePath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione/Documenti", "log.txt")
 
-            ' Verifica se il file esiste
+    Private Sub LoadLogFile()
+        Console.WriteLine("[DEBUG] Avvio caricamento file log.txt")
+
+        Try
+            ' Percorso del file log.txt nella directory Documenti dell'app
+            Dim logFilePath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione", "Documenti", "log.txt")
+            Console.WriteLine("[DEBUG] Percorso file: " & logFilePath)
+
             If File.Exists(logFilePath) Then
-                ' Leggi il contenuto del file e visualizzalo nella RichTextBox
                 RichTextBoxLog.Text = File.ReadAllText(logFilePath)
+                Console.WriteLine("[DEBUG] File log.txt caricato correttamente.")
             Else
                 RichTextBoxLog.Text = "Il file log.txt non è stato trovato."
+                Console.WriteLine("[DEBUG] File log.txt non trovato.")
             End If
         Catch ex As Exception
+            Console.WriteLine("[DEBUG] Errore: " & ex.ToString())
             MessageBox.Show($"Errore durante il caricamento del file log.txt: {ex.Message}", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
-    Private Sub btnSaveChanges_Click(sender As Object, e As EventArgs) Handles btnSaveChanges.Click
-        Try
-            Using sqliteConnection = New SQLiteConnection(connectionString)
-                sqliteConnection.Open()
 
-                ' Preparare un comando per aggiornare la tabella
+    Private Sub btnSaveChanges_Click(sender As Object, e As EventArgs) Handles btnSaveChanges.Click
+        Console.WriteLine("[DEBUG] Avvio salvataggio modifiche su sqlite_sequence.")
+
+        Try
+            Using sqliteConnection As New SqliteConnection(connectionString)
+                sqliteConnection.Open()
+                Console.WriteLine("[DEBUG] Connessione al database aperta.")
+
                 Dim updateQuery As String = "UPDATE sqlite_sequence SET seq = @seq WHERE name = @name"
+                Console.WriteLine("[DEBUG] Query di aggiornamento: " & updateQuery)
+
+                Dim modificheEseguite As Integer = 0
+
                 For Each row As DataGridViewRow In dgvSqliteSequence.Rows
                     If Not row.IsNewRow Then
-                        Using cmd As New SQLiteCommand(updateQuery, sqliteConnection)
-                            cmd.Parameters.AddWithValue("@name", row.Cells("name").Value)
-                            cmd.Parameters.AddWithValue("@seq", row.Cells("seq").Value)
-                            cmd.ExecuteNonQuery()
-                        End Using
+                        Dim nameValue = row.Cells("name").Value?.ToString()
+                        Dim seqValue = row.Cells("seq").Value?.ToString()
+
+                        If Not String.IsNullOrEmpty(nameValue) AndAlso Not String.IsNullOrEmpty(seqValue) Then
+                            Using cmd As New SqliteCommand(updateQuery, sqliteConnection)
+                                cmd.Parameters.AddWithValue("@name", nameValue)
+                                cmd.Parameters.AddWithValue("@seq", seqValue)
+                                modificheEseguite += cmd.ExecuteNonQuery()
+                                Console.WriteLine($"[DEBUG] Aggiornato: name={nameValue}, seq={seqValue}")
+                            End Using
+                        Else
+                            Console.WriteLine("[DEBUG] Riga ignorata: valori nulli o vuoti.")
+                        End If
                     End If
                 Next
 
                 MessageBox.Show("Modifiche salvate con successo.", "Successo", MessageBoxButtons.OK, MessageBoxIcon.Information)
-                LoadSqliteSequence() ' Ricarica i dati aggiornati
+                Console.WriteLine("[DEBUG] Modifiche totali eseguite: " & modificheEseguite)
+
+                LoadSqliteSequence()
             End Using
         Catch ex As Exception
+            Console.WriteLine("[DEBUG] Errore: " & ex.ToString())
             MessageBox.Show($"Errore durante il salvataggio delle modifiche: {ex.Message}", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
 
-    Private Sub btnBackupDatabase_Click(sender As Object, e As EventArgs) Handles btnBackupDatabase.Click
-        Try
-            ' Percorso del file di database
-            Dim databasePath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione", "amministrazione.db")
 
-            ' Verifica se il file esiste
+    Private Sub btnBackupDatabase_Click(sender As Object, e As EventArgs) Handles btnBackupDatabase.Click
+        Console.WriteLine("[DEBUG] Avvio procedura di backup database.")
+
+        Try
+            Dim databasePath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione", "amministrazione.db")
+            Console.WriteLine("[DEBUG] Percorso database: " & databasePath)
+
             If Not File.Exists(databasePath) Then
+                Console.WriteLine("[DEBUG] File database non trovato.")
                 MessageBox.Show("Il file del database non esiste.", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
                 Return
             End If
 
-            ' Apri una finestra di dialogo per salvare il file di database
             Dim saveFileDialog As New SaveFileDialog()
             saveFileDialog.Filter = "Database SQLite (*.db)|*.db"
             saveFileDialog.Title = "Salva il backup del database"
 
             If saveFileDialog.ShowDialog() = DialogResult.OK Then
-                ' Copia il file del database nella posizione selezionata
                 File.Copy(databasePath, saveFileDialog.FileName, True)
+                Console.WriteLine("[DEBUG] Backup salvato in: " & saveFileDialog.FileName)
                 MessageBox.Show("Backup del database completato con successo!", "Successo", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Else
+                Console.WriteLine("[DEBUG] Operazione di salvataggio annullata dall'utente.")
             End If
         Catch ex As Exception
+            Console.WriteLine("[DEBUG] Errore: " & ex.ToString())
             MessageBox.Show($"Errore durante il backup del database: {ex.Message}", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
-    Private Sub btnBackupConfigurazione_Click(sender As Object, e As EventArgs) Handles btnBackupConfigurazione.Click
-        Try
-            ' Percorso della cartella "Amministrazione"
-            Dim amministrazioneFolderPath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione")
 
-            ' Verifica se la cartella esiste
+    Private Sub btnBackupConfigurazione_Click(sender As Object, e As EventArgs) Handles btnBackupConfigurazione.Click
+        Console.WriteLine("[DEBUG] Avvio backup configurazione cartella 'Amministrazione'.")
+
+        Try
+            Dim amministrazioneFolderPath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione")
+            Console.WriteLine("[DEBUG] Percorso cartella: " & amministrazioneFolderPath)
+
             If Not Directory.Exists(amministrazioneFolderPath) Then
+                Console.WriteLine("[DEBUG] Cartella non trovata.")
                 MessageBox.Show("La cartella 'Amministrazione' non esiste.", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
                 Return
             End If
 
-            ' Apri una finestra di dialogo per salvare il file ZIP
-            Dim saveFileDialog As New SaveFileDialog()
-            saveFileDialog.Filter = "File ZIP (*.zip)|*.zip"
-            saveFileDialog.Title = "Salva il backup della configurazione"
+            Dim saveFileDialog As New SaveFileDialog() With {
+            .Filter = "File ZIP (*.zip)|*.zip",
+            .Title = "Salva il backup della configurazione"
+        }
 
             If saveFileDialog.ShowDialog() = DialogResult.OK Then
-                ' Crea un file ZIP della cartella "Amministrazione" escludendo il file del database
                 Dim zipFilePath As String = saveFileDialog.FileName
-                If File.Exists(zipFilePath) Then File.Delete(zipFilePath) ' Rimuovi il file ZIP esistente
+                Console.WriteLine("[DEBUG] Percorso ZIP selezionato: " & zipFilePath)
 
-                ' Crea una copia temporanea della cartella senza il file del database
+                If File.Exists(zipFilePath) Then
+                    File.Delete(zipFilePath)
+                    Console.WriteLine("[DEBUG] ZIP esistente eliminato.")
+                End If
+
                 Dim tempFolderPath As String = Path.Combine(Path.GetTempPath(), "AmministrazioneTemp")
                 If Directory.Exists(tempFolderPath) Then Directory.Delete(tempFolderPath, True)
+                Console.WriteLine("[DEBUG] Cartella temporanea: " & tempFolderPath)
+
                 My.Computer.FileSystem.CopyDirectory(amministrazioneFolderPath, tempFolderPath)
+                Console.WriteLine("[DEBUG] Copia cartella completata.")
 
-                ' Rimuovi il file del database dalla copia temporanea
                 Dim tempDatabasePath As String = Path.Combine(tempFolderPath, "amministrazione.db")
-                If File.Exists(tempDatabasePath) Then File.Delete(tempDatabasePath)
+                If File.Exists(tempDatabasePath) Then
+                    File.Delete(tempDatabasePath)
+                    Console.WriteLine("[DEBUG] File database escluso dal backup.")
+                End If
 
-                ' Comprimi la cartella temporanea
                 ZipFile.CreateFromDirectory(tempFolderPath, zipFilePath)
+                Console.WriteLine("[DEBUG] Compressione completata.")
 
-                ' Elimina la cartella temporanea
                 Directory.Delete(tempFolderPath, True)
+                Console.WriteLine("[DEBUG] Cartella temporanea eliminata.")
 
                 MessageBox.Show("Backup della configurazione completato con successo!", "Successo", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Else
+                Console.WriteLine("[DEBUG] Operazione annullata dall'utente.")
             End If
         Catch ex As Exception
+            Console.WriteLine("[DEBUG] Errore: " & ex.ToString())
             MessageBox.Show($"Errore durante il backup della configurazione: {ex.Message}", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
+
     Private Sub btnCaricaDatabase_Click(sender As Object, e As EventArgs) Handles btnCaricaDatabase.Click
+        Console.WriteLine("[DEBUG] Avvio procedura di caricamento database.")
+
         Try
-            ' Apri una finestra di dialogo per selezionare un file di database
-            Dim openFileDialog As New OpenFileDialog
-            openFileDialog.Filter = "Database SQLite (*.db)|*.db"
-            openFileDialog.Title = "Seleziona un file di database"
+            Dim openFileDialog As New OpenFileDialog With {
+            .Filter = "Database SQLite (*.db)|*.db",
+            .Title = "Seleziona un file di database"
+        }
 
-            If openFileDialog.ShowDialog = DialogResult.OK Then
-                ' Percorso del file di database selezionato
+            If openFileDialog.ShowDialog() = DialogResult.OK Then
                 Dim selectedDatabasePath = openFileDialog.FileName
+                Console.WriteLine("[DEBUG] File selezionato: " & selectedDatabasePath)
 
-                ' Percorso della cartella "Amministrazione"
                 Dim amministrazioneFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione")
-                Dim targetDatabasePath = Path.Combine(amministrazioneFolderPath, "amministrazione.db")
+                Console.WriteLine("[DEBUG] Cartella destinazione: " & amministrazioneFolderPath)
 
-                ' Copia il file di database nella directory dell'applicazione
+                If Not Directory.Exists(amministrazioneFolderPath) Then
+                    Directory.CreateDirectory(amministrazioneFolderPath)
+                    Console.WriteLine("[DEBUG] Cartella 'Amministrazione' creata.")
+                End If
+
+                Dim targetDatabasePath = Path.Combine(amministrazioneFolderPath, "amministrazione.db")
                 File.Copy(selectedDatabasePath, targetDatabasePath, True)
+                Console.WriteLine("[DEBUG] Database copiato in: " & targetDatabasePath)
 
                 MessageBox.Show("Database caricato con successo!", "Successo", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Else
+                Console.WriteLine("[DEBUG] Operazione annullata dall'utente.")
             End If
         Catch ex As Exception
+            Console.WriteLine("[DEBUG] Errore: " & ex.ToString())
             MessageBox.Show($"Errore durante il caricamento del database: {ex.Message}", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
+
     Private Sub btnCaricaConfigurazione_Click(sender As Object, e As EventArgs) Handles btnCaricaConfigurazione.Click
+        Console.WriteLine("[DEBUG] Avvio procedura di caricamento configurazione ZIP.")
+
         Try
-            ' Apri una finestra di dialogo per selezionare un file ZIP
-            Dim openFileDialog As New OpenFileDialog()
-            openFileDialog.Filter = "File ZIP (*.zip)|*.zip"
-            openFileDialog.Title = "Seleziona un file ZIP di configurazione"
+            Dim openFileDialog As New OpenFileDialog() With {
+            .Filter = "File ZIP (*.zip)|*.zip",
+            .Title = "Seleziona un file ZIP di configurazione"
+        }
 
             If openFileDialog.ShowDialog() = DialogResult.OK Then
-                ' Percorso del file ZIP selezionato
                 Dim zipFilePath As String = openFileDialog.FileName
+                Console.WriteLine("[DEBUG] File ZIP selezionato: " & zipFilePath)
 
-                ' Percorso della cartella "Amministrazione"
                 Dim amministrazioneFolderPath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione")
+                Console.WriteLine("[DEBUG] Cartella destinazione: " & amministrazioneFolderPath)
 
-                ' Estrai il contenuto del file ZIP in una directory temporanea
                 Dim tempFolderPath As String = Path.Combine(Path.GetTempPath(), "AmministrazioneTemp")
                 If Directory.Exists(tempFolderPath) Then
                     Directory.Delete(tempFolderPath, True)
+                    Console.WriteLine("[DEBUG] Cartella temporanea preesistente eliminata.")
                 End If
-                ZipFile.ExtractToDirectory(zipFilePath, tempFolderPath)
 
-                ' Copia i file dalla directory temporanea alla cartella "Amministrazione", escludendo il database
+                ZipFile.ExtractToDirectory(zipFilePath, tempFolderPath)
+                Console.WriteLine("[DEBUG] File ZIP estratto in: " & tempFolderPath)
+
                 For Each filePath As String In Directory.GetFiles(tempFolderPath, "*", SearchOption.AllDirectories)
-                    Dim relativePath As String = filePath.Substring(tempFolderPath.Length + 1) ' Percorso relativo
+                    Dim relativePath As String = filePath.Substring(tempFolderPath.Length + 1)
                     Dim targetPath As String = Path.Combine(amministrazioneFolderPath, relativePath)
 
-                    ' Salta il file del database
                     If Path.GetFileName(targetPath).ToLower() = "amministrazione.db" Then
+                        Console.WriteLine("[DEBUG] File 'amministrazione.db' ignorato.")
                         Continue For
                     End If
 
-                    ' Crea la directory di destinazione se non esiste
                     Dim targetDirectory As String = Path.GetDirectoryName(targetPath)
                     If Not Directory.Exists(targetDirectory) Then
                         Directory.CreateDirectory(targetDirectory)
+                        Console.WriteLine("[DEBUG] Creata directory: " & targetDirectory)
                     End If
 
-                    ' Copia il file
                     File.Copy(filePath, targetPath, True)
+                    Console.WriteLine("[DEBUG] File copiato: " & targetPath)
                 Next
 
-                ' Elimina la directory temporanea
                 Directory.Delete(tempFolderPath, True)
+                Console.WriteLine("[DEBUG] Cartella temporanea eliminata.")
 
                 MessageBox.Show("Configurazione caricata con successo!", "Successo", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Else
+                Console.WriteLine("[DEBUG] Operazione annullata dall'utente.")
             End If
         Catch ex As Exception
+            Console.WriteLine("[DEBUG] Errore: " & ex.ToString())
             MessageBox.Show($"Errore durante il caricamento della configurazione: {ex.Message}", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub

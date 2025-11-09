@@ -2,11 +2,11 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net9.0-windows10.0.17763.0</TargetFramework>
+    <TargetFramework>net9.0-windows10.0.26100.0</TargetFramework>
 	  <!-- <StartupObject>Sub Main</StartupObject> -->
     <UseWindowsForms>true</UseWindowsForms>
     <MyType>WindowsForms</MyType>
-    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion>10.0.26100.0</SupportedOSPlatformVersion>
     <Copyright>Max Scarzella</Copyright>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
@@ -101,20 +101,27 @@
 		-Implementazione aggiornamento automatico dell'applicazione
 		-Implementazione della funzione di esportazione dati per intervallo di date
 		-Implementazione della visualizzazione dell'anteprima del file
-		
-	    Versione 8.4.2.0
+
+		Versione 8.4.2.0
 		-Implementazione della funzione allegati
 		-Controllo spese in evidenza
+		-Aggiunta Drag e Drop per l'inserimento dei file
+		-Aggiunta finestra di Debug
+
 	</Description>
-    <AssemblyVersion>8.4.2.3</AssemblyVersion>
-    <FileVersion>8.4.2.3</FileVersion>
+    <AssemblyVersion>8.4.2.4</AssemblyVersion>
+    <FileVersion>8.4.2.4</FileVersion>
     <EnableWindowsFormsHighDpi>true</EnableWindowsFormsHighDpi>
     <ApplicationIcon>amministrazione_new_logo.ico</ApplicationIcon> <!-- Abilita il supporto DPI alto -->
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
 
   <ItemGroup>
     <Compile Remove="bin\Debug\net8.0-windows10.0.17763.0\**" />
@@ -122,7 +129,6 @@
     <None Remove="bin\Debug\net8.0-windows10.0.17763.0\**" />
   </ItemGroup>
 
-  
 
   <ItemGroup>
     <Content Include="amministrazione_new_logo.ico" />
@@ -161,15 +167,14 @@
   <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="DocumentFormat.OpenXml" Version="3.3.0" />
-    <PackageReference Include="EPPlus" Version="8.0.7" />
-    <PackageReference Include="EPPlus.Interfaces" Version="8.0.0" />
-    <PackageReference Include="EPPlus.System.Drawing" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3351.48" />
-    <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
-    <PackageReference Include="System.Data.SQLite" Version="1.0.119" />
-    <PackageReference Include="System.Drawing.Common" Version="9.0.7" />
-    <PackageReference Include="System.Formats.Asn1" Version="9.0.7" />
-    <PackageReference Include="System.Text.Json" Version="9.0.7" />
+    <PackageReference Include="EPPlus" Version="8.2.1" />
+    <PackageReference Include="EPPlus.Interfaces" Version="8.1.0" />
+    <PackageReference Include="EPPlus.System.Drawing" Version="8.1.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3595.46" />
+    <PackageReference Include="System.Drawing.Common" Version="9.0.10" />
+    <PackageReference Include="System.Formats.Asn1" Version="9.0.10" />
+    <PackageReference Include="System.Text.Json" Version="9.0.10" />
     <PackageReference Include="WinForms.DataVisualization" Version="1.10.0" />
   </ItemGroup>
 
@@ -216,5 +221,7 @@
   <ItemGroup>
     <Folder Include="bin\Debug\" />
   </ItemGroup>
+
+ 
 
 </Project>
