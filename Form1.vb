@@ -1078,26 +1078,30 @@ Public Class Form1
         Dim connString As String = "Data Source=" & databasePath
         Console.WriteLine("[DEBUG] Percorso database: " & databasePath)
 
-        Using conn As New SqliteConnection(connString)
-            conn.Open()
-            Console.WriteLine("[DEBUG] Connessione al database aperta.")
+        Try
+            Using conn As New Microsoft.Data.Sqlite.SqliteConnection(connString)
+                conn.Open()
+                Console.WriteLine("[DEBUG] Connessione al database aperta.")
 
-            Using cmd As New SqliteCommand(connString)
-                cmd.CommandText = "DELETE FROM Movimenti WHERE ID = @id"
-                cmd.Parameters.AddWithValue("@id", recordID)
-                Console.WriteLine("[DEBUG] Eseguo DELETE per ID: " & recordID)
-
-                cmd.ExecuteNonQuery()
-                Console.WriteLine("[DEBUG] Record eliminato.")
+                Using cmd As New Microsoft.Data.Sqlite.SqliteCommand("DELETE FROM Movimenti WHERE ID = @id", conn)
+                    cmd.Parameters.AddWithValue("@id", recordID)
+                    Console.WriteLine("[DEBUG] Eseguo DELETE per ID: " & recordID)
+                    cmd.ExecuteNonQuery()
+                    Console.WriteLine("[DEBUG] Record eliminato.")
+                End Using
             End Using
-        End Using
 
-        Console.WriteLine("[DEBUG] Aggiornamento interfaccia dopo eliminazione.")
-        LoadData()
-        UpdateLabels()
-        LoadDataIntoComboboxes()
-        HighlightDatesWithDocuments()
+            Console.WriteLine("[DEBUG] Aggiornamento interfaccia dopo eliminazione.")
+            LoadData()
+            UpdateLabels()
+            LoadDataIntoComboboxes()
+            HighlightDatesWithDocuments()
+        Catch ex As Exception
+            MessageBox.Show("Errore durante l'eliminazione del record: " & ex.Message)
+            Console.WriteLine("[DEBUG] Errore eliminazione record: " & ex.ToString())
+        End Try
     End Sub
+
 
 
     Private Sub EditRecord(recordID As Integer, updatedRow As DataGridViewRow)
