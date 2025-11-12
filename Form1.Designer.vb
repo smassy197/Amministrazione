@@ -56,17 +56,19 @@ Partial Class Form1
         lblDownloadStatus = New Label()
         Panel1 = New Panel()
         btnExport = New Button()
-        ChartSpese = New DataVisualization.Charting.Chart()
-        lblSpeseMeseCorrente = New Label()
+        SqliteCommand1 = New Microsoft.Data.Sqlite.SqliteCommand()
+        saldoattuale = New DataGridView()
+        Chart1 = New DataVisualization.Charting.Chart()
         CType(DataGridView1, ComponentModel.ISupportInitialize).BeginInit()
         Panel1.SuspendLayout()
-        CType(ChartSpese, ComponentModel.ISupportInitialize).BeginInit()
+        CType(saldoattuale, ComponentModel.ISupportInitialize).BeginInit()
+        CType(Chart1, ComponentModel.ISupportInitialize).BeginInit()
         SuspendLayout()
         ' 
         ' txtAdebito
         ' 
         txtAdebito.Font = New Font("Segoe UI", 14.25F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        txtAdebito.Location = New Point(360, 86)
+        txtAdebito.Location = New Point(388, 102)
         txtAdebito.Margin = New Padding(3, 2, 3, 2)
         txtAdebito.Name = "txtAdebito"
         txtAdebito.Size = New Size(110, 33)
@@ -75,7 +77,7 @@ Partial Class Form1
         ' txtAcredito
         ' 
         txtAcredito.Font = New Font("Segoe UI", 13.8F)
-        txtAcredito.Location = New Point(360, 126)
+        txtAcredito.Location = New Point(388, 142)
         txtAcredito.Margin = New Padding(3, 2, 3, 2)
         txtAcredito.Name = "txtAcredito"
         txtAcredito.Size = New Size(110, 32)
@@ -84,10 +86,10 @@ Partial Class Form1
         ' btnSave
         ' 
         btnSave.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        btnSave.Location = New Point(488, 86)
+        btnSave.Location = New Point(675, 34)
         btnSave.Margin = New Padding(3, 2, 3, 2)
         btnSave.Name = "btnSave"
-        btnSave.Size = New Size(91, 69)
+        btnSave.Size = New Size(145, 61)
         btnSave.TabIndex = 6
         btnSave.Text = "Salva"
         btnSave.UseVisualStyleBackColor = True
@@ -97,18 +99,18 @@ Partial Class Form1
         DataGridView1.Anchor = AnchorStyles.None
         DataGridView1.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
         DataGridView1.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize
-        DataGridView1.Location = New Point(0, 286)
+        DataGridView1.Location = New Point(16, 229)
         DataGridView1.Margin = New Padding(3, 2, 3, 2)
         DataGridView1.Name = "DataGridView1"
         DataGridView1.RowHeadersWidth = 51
-        DataGridView1.Size = New Size(1196, 349)
+        DataGridView1.Size = New Size(1153, 397)
         DataGridView1.TabIndex = 7
         ' 
         ' Label1
         ' 
         Label1.AutoSize = True
         Label1.Font = New Font("Segoe UI", 12F)
-        Label1.Location = New Point(255, 20)
+        Label1.Location = New Point(283, 36)
         Label1.Name = "Label1"
         Label1.Size = New Size(52, 21)
         Label1.TabIndex = 7
@@ -118,7 +120,7 @@ Partial Class Form1
         ' 
         Label3.AutoSize = True
         Label3.Font = New Font("Segoe UI", 12F)
-        Label3.Location = New Point(255, 91)
+        Label3.Location = New Point(283, 107)
         Label3.Name = "Label3"
         Label3.Size = New Size(68, 21)
         Label3.TabIndex = 9
@@ -128,7 +130,7 @@ Partial Class Form1
         ' 
         Label4.AutoSize = True
         Label4.Font = New Font("Segoe UI", 12F)
-        Label4.Location = New Point(255, 129)
+        Label4.Location = New Point(283, 145)
         Label4.Name = "Label4"
         Label4.Size = New Size(72, 21)
         Label4.TabIndex = 10
@@ -138,7 +140,7 @@ Partial Class Form1
         ' 
         Label5.AutoSize = True
         Label5.Font = New Font("Segoe UI", 12F)
-        Label5.Location = New Point(255, 54)
+        Label5.Location = New Point(283, 70)
         Label5.Name = "Label5"
         Label5.Size = New Size(90, 21)
         Label5.TabIndex = 11
@@ -148,27 +150,27 @@ Partial Class Form1
         ' 
         cmbConto.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         cmbConto.FormattingEnabled = True
-        cmbConto.Location = New Point(360, 18)
+        cmbConto.Location = New Point(388, 34)
         cmbConto.Margin = New Padding(3, 2, 3, 2)
         cmbConto.Name = "cmbConto"
-        cmbConto.Size = New Size(219, 29)
+        cmbConto.Size = New Size(281, 29)
         cmbConto.TabIndex = 2
         ' 
         ' cmbDescrizione
         ' 
         cmbDescrizione.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         cmbDescrizione.FormattingEnabled = True
-        cmbDescrizione.Location = New Point(360, 50)
+        cmbDescrizione.Location = New Point(388, 66)
         cmbDescrizione.Margin = New Padding(3, 2, 3, 2)
         cmbDescrizione.Name = "cmbDescrizione"
-        cmbDescrizione.Size = New Size(219, 29)
+        cmbDescrizione.Size = New Size(281, 29)
         cmbDescrizione.TabIndex = 3
         ' 
         ' cmbContoType
         ' 
         cmbContoType.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         cmbContoType.FormattingEnabled = True
-        cmbContoType.Location = New Point(609, 41)
+        cmbContoType.Location = New Point(876, 35)
         cmbContoType.Margin = New Padding(3, 2, 3, 2)
         cmbContoType.Name = "cmbContoType"
         cmbContoType.Size = New Size(174, 29)
@@ -176,7 +178,7 @@ Partial Class Form1
         ' 
         ' dtpStartDate
         ' 
-        dtpStartDate.Location = New Point(609, 75)
+        dtpStartDate.Location = New Point(876, 69)
         dtpStartDate.Margin = New Padding(3, 2, 3, 2)
         dtpStartDate.Name = "dtpStartDate"
         dtpStartDate.Size = New Size(219, 23)
@@ -184,7 +186,7 @@ Partial Class Form1
         ' 
         ' dtpEndDate
         ' 
-        dtpEndDate.Location = New Point(609, 103)
+        dtpEndDate.Location = New Point(876, 97)
         dtpEndDate.Margin = New Padding(3, 2, 3, 2)
         dtpEndDate.Name = "dtpEndDate"
         dtpEndDate.Size = New Size(219, 23)
@@ -193,7 +195,7 @@ Partial Class Form1
         ' btnCalculate
         ' 
         btnCalculate.Font = New Font("Segoe UI", 12F)
-        btnCalculate.Location = New Point(609, 136)
+        btnCalculate.Location = New Point(876, 130)
         btnCalculate.Margin = New Padding(3, 2, 3, 2)
         btnCalculate.Name = "btnCalculate"
         btnCalculate.Size = New Size(61, 44)
@@ -205,7 +207,7 @@ Partial Class Form1
         ' 
         lblSaldo.AutoSize = True
         lblSaldo.Font = New Font("Segoe UI", 12F)
-        lblSaldo.Location = New Point(588, 203)
+        lblSaldo.Location = New Point(613, 193)
         lblSaldo.Name = "lblSaldo"
         lblSaldo.Size = New Size(56, 21)
         lblSaldo.TabIndex = 19
@@ -215,7 +217,7 @@ Partial Class Form1
         ' 
         lblPatrimonio.AutoSize = True
         lblPatrimonio.Font = New Font("Segoe UI", 12F)
-        lblPatrimonio.Location = New Point(588, 227)
+        lblPatrimonio.Location = New Point(876, 193)
         lblPatrimonio.Name = "lblPatrimonio"
         lblPatrimonio.Size = New Size(56, 21)
         lblPatrimonio.TabIndex = 20
@@ -225,7 +227,7 @@ Partial Class Form1
         ' 
         Label6.AutoSize = True
         Label6.Font = New Font("Segoe UI", 12F)
-        Label6.Location = New Point(609, 18)
+        Label6.Location = New Point(876, 12)
         Label6.Name = "Label6"
         Label6.Size = New Size(60, 21)
         Label6.TabIndex = 21
@@ -234,20 +236,20 @@ Partial Class Form1
         ' btnShowAll
         ' 
         btnShowAll.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        btnShowAll.Location = New Point(137, 196)
+        btnShowAll.Location = New Point(137, 189)
         btnShowAll.Margin = New Padding(3, 2, 3, 2)
         btnShowAll.Name = "btnShowAll"
-        btnShowAll.Size = New Size(114, 58)
+        btnShowAll.Size = New Size(114, 29)
         btnShowAll.TabIndex = 22
         btnShowAll.Text = "Mostra tutto"
         btnShowAll.UseVisualStyleBackColor = True
         ' 
         ' btnbackup
         ' 
-        btnbackup.Location = New Point(1073, 69)
+        btnbackup.Location = New Point(1265, 59)
         btnbackup.Margin = New Padding(3, 2, 3, 2)
         btnbackup.Name = "btnbackup"
-        btnbackup.Size = New Size(101, 22)
+        btnbackup.Size = New Size(101, 27)
         btnbackup.TabIndex = 23
         btnbackup.Text = "Manutenzione"
         btnbackup.UseVisualStyleBackColor = True
@@ -255,7 +257,7 @@ Partial Class Form1
         ' btnOpenForm3
         ' 
         btnOpenForm3.Font = New Font("Segoe UI", 13.8F)
-        btnOpenForm3.Location = New Point(985, 19)
+        btnOpenForm3.Location = New Point(1177, 11)
         btnOpenForm3.Margin = New Padding(3, 2, 3, 2)
         btnOpenForm3.Name = "btnOpenForm3"
         btnOpenForm3.Size = New Size(189, 44)
@@ -273,10 +275,10 @@ Partial Class Form1
         ' btnResetSearch
         ' 
         btnResetSearch.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        btnResetSearch.Location = New Point(16, 196)
+        btnResetSearch.Location = New Point(16, 189)
         btnResetSearch.Margin = New Padding(3, 2, 3, 2)
         btnResetSearch.Name = "btnResetSearch"
-        btnResetSearch.Size = New Size(116, 58)
+        btnResetSearch.Size = New Size(116, 29)
         btnResetSearch.TabIndex = 26
         btnResetSearch.Text = "Reset"
         btnResetSearch.UseVisualStyleBackColor = True
@@ -284,7 +286,7 @@ Partial Class Form1
         ' OpenChart
         ' 
         OpenChart.Font = New Font("Segoe UI", 12F)
-        OpenChart.Location = New Point(762, 136)
+        OpenChart.Location = New Point(1029, 130)
         OpenChart.Margin = New Padding(3, 2, 3, 2)
         OpenChart.Name = "OpenChart"
         OpenChart.Size = New Size(66, 44)
@@ -294,10 +296,10 @@ Partial Class Form1
         ' 
         ' bntInfo
         ' 
-        bntInfo.Location = New Point(985, 69)
+        bntInfo.Location = New Point(1177, 59)
         bntInfo.Margin = New Padding(3, 2, 3, 2)
         bntInfo.Name = "bntInfo"
-        bntInfo.Size = New Size(82, 22)
+        bntInfo.Size = New Size(82, 27)
         bntInfo.TabIndex = 28
         bntInfo.Text = "Release"
         bntInfo.UseVisualStyleBackColor = True
@@ -305,10 +307,10 @@ Partial Class Form1
         ' RichTextBoxNota
         ' 
         RichTextBoxNota.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
-        RichTextBoxNota.Location = New Point(360, 166)
+        RichTextBoxNota.Location = New Point(504, 104)
         RichTextBoxNota.Margin = New Padding(3, 2, 3, 2)
         RichTextBoxNota.Name = "RichTextBoxNota"
-        RichTextBoxNota.Size = New Size(219, 88)
+        RichTextBoxNota.Size = New Size(165, 70)
         RichTextBoxNota.TabIndex = 29
         RichTextBoxNota.Text = ""
         ' 
@@ -316,7 +318,7 @@ Partial Class Form1
         ' 
         Label2.AutoSize = True
         Label2.Font = New Font("Segoe UI", 12F)
-        Label2.Location = New Point(301, 169)
+        Label2.Location = New Point(675, 102)
         Label2.Name = "Label2"
         Label2.Size = New Size(44, 21)
         Label2.TabIndex = 30
@@ -356,7 +358,7 @@ Partial Class Form1
         ' btnExport
         ' 
         btnExport.Font = New Font("Segoe UI", 12F)
-        btnExport.Location = New Point(676, 136)
+        btnExport.Location = New Point(943, 130)
         btnExport.Margin = New Padding(3, 2, 3, 2)
         btnExport.Name = "btnExport"
         btnExport.Size = New Size(80, 44)
@@ -364,39 +366,44 @@ Partial Class Form1
         btnExport.Text = "Esporta"
         btnExport.UseVisualStyleBackColor = True
         ' 
-        ' ChartSpese
+        ' SqliteCommand1
+        ' 
+        SqliteCommand1.CommandTimeout = 30
+        SqliteCommand1.Connection = Nothing
+        SqliteCommand1.Transaction = Nothing
+        SqliteCommand1.UpdatedRowSource = UpdateRowSource.None
+        ' 
+        ' saldoattuale
+        ' 
+        saldoattuale.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize
+        saldoattuale.Location = New Point(1175, 229)
+        saldoattuale.Name = "saldoattuale"
+        saldoattuale.Size = New Size(461, 396)
+        saldoattuale.TabIndex = 37
+        ' 
+        ' Chart1
         ' 
         ChartArea1.Name = "ChartArea1"
-        ChartSpese.ChartAreas.Add(ChartArea1)
+        Chart1.ChartAreas.Add(ChartArea1)
         Legend1.Name = "Legend1"
-        ChartSpese.Legends.Add(Legend1)
-        ChartSpese.Location = New Point(855, 103)
-        ChartSpese.Name = "ChartSpese"
-        ChartSpese.Palette = DataVisualization.Charting.ChartColorPalette.EarthTones
+        Chart1.Legends.Add(Legend1)
+        Chart1.Location = New Point(1177, 91)
+        Chart1.Name = "Chart1"
         Series1.ChartArea = "ChartArea1"
         Series1.Legend = "Legend1"
         Series1.Name = "Series1"
-        ChartSpese.Series.Add(Series1)
-        ChartSpese.Size = New Size(319, 151)
-        ChartSpese.TabIndex = 35
-        ChartSpese.Text = "Chart1"
-        ' 
-        ' lblSpeseMeseCorrente
-        ' 
-        lblSpeseMeseCorrente.AutoSize = True
-        lblSpeseMeseCorrente.Location = New Point(1085, 153)
-        lblSpeseMeseCorrente.Name = "lblSpeseMeseCorrente"
-        lblSpeseMeseCorrente.Size = New Size(41, 15)
-        lblSpeseMeseCorrente.TabIndex = 36
-        lblSpeseMeseCorrente.Text = "Label7"
+        Chart1.Series.Add(Series1)
+        Chart1.Size = New Size(459, 132)
+        Chart1.TabIndex = 38
+        Chart1.Text = "Chart1"
         ' 
         ' Form1
         ' 
         AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
-        ClientSize = New Size(1196, 637)
-        Controls.Add(lblSpeseMeseCorrente)
-        Controls.Add(ChartSpese)
+        ClientSize = New Size(1648, 637)
+        Controls.Add(Chart1)
+        Controls.Add(saldoattuale)
         Controls.Add(btnExport)
         Controls.Add(Panel1)
         Controls.Add(Label2)
@@ -433,7 +440,8 @@ Partial Class Form1
         CType(DataGridView1, ComponentModel.ISupportInitialize).EndInit()
         Panel1.ResumeLayout(False)
         Panel1.PerformLayout()
-        CType(ChartSpese, ComponentModel.ISupportInitialize).EndInit()
+        CType(saldoattuale, ComponentModel.ISupportInitialize).EndInit()
+        CType(Chart1, ComponentModel.ISupportInitialize).EndInit()
         ResumeLayout(False)
         PerformLayout()
     End Sub
@@ -468,6 +476,7 @@ Partial Class Form1
     Friend WithEvents lblDownloadStatus As Label
     Friend WithEvents Panel1 As Panel
     Friend WithEvents btnExport As Button
-    Friend WithEvents ChartSpese As DataVisualization.Charting.Chart
-    Friend WithEvents lblSpeseMeseCorrente As Label
+    Friend WithEvents SqliteCommand1 As Microsoft.Data.Sqlite.SqliteCommand
+    Friend WithEvents saldoattuale As DataGridView
+    Friend WithEvents Chart1 As DataVisualization.Charting.Chart
 End Class

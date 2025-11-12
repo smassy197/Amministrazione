@@ -346,6 +346,7 @@ Public Class FormInserimentoGuidato
         picNotifica.Visible = (righeScadute > 0)
 
         Console.WriteLine("[DEBUG] Righe scadute: " & righeScadute)
+        TimerScadenze.Stop()
     End Sub
 
     '--------------------------------------------------------------------------------------------------------

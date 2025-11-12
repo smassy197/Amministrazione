@@ -79,7 +79,11 @@ Public Class Form1
             'cmbContoType.Items.Add("Saldo Progressivo")
 
             CheckForUpdate()
-            CaricaGraficoSpeseMeseCorrente()
+
+            AggiornaSaldoAnnoCorrente()
+            Dim dt As DataTable = CaricaAndamentoAnnoCorrente()
+            DisegnaGraficoSaldo(dt, Chart1)   ' chart1 è il controllo Chart sul form
+
 
         Catch ex As Exception
             Console.WriteLine("Errore in Form1_Load: " & ex.Message & vbCrLf & ex.StackTrace)
@@ -662,7 +666,7 @@ Public Class Form1
             HighlightDatesWithDocuments()
             Console.WriteLine("Date evidenziate nel calendario.")
 
-            CaricaGraficoSpeseMeseCorrente()
+
             Console.WriteLine("Grafico spese mese corrente aggiornato.")
 
             MonthCalendar1.UpdateBoldedDates()
@@ -1486,58 +1490,134 @@ Public Class Form1
     End Sub
 
 
-    Private Sub CaricaGraficoSpeseMeseCorrente()
-        Console.WriteLine("[DEBUG] Avvio caricamento grafico spese mese corrente.")
+
+    Private Function CaricaAndamentoAnnoCorrente() As DataTable
+        Console.WriteLine("[DEBUG] Avvio CaricaAndamentoAnnoCorrente.")
+
+        Dim dt As New DataTable()
+        dt.Columns.Add("Mese", GetType(String))
+        dt.Columns.Add("Entrate", GetType(Double))
+        dt.Columns.Add("Uscite", GetType(Double))
+        dt.Columns.Add("Saldo", GetType(Double))
 
         Dim databasePath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione", "amministrazione.db")
         Dim connString As String = "Data Source=" & databasePath
-        Console.WriteLine("[DEBUG] Percorso database: " & databasePath)
 
-        Dim oggi As Date = Date.Today
-        Dim primoGiornoMese As Date = New Date(oggi.Year, oggi.Month, 1)
-        Dim ultimoGiornoMese As Date = New Date(oggi.Year, oggi.Month, Date.DaysInMonth(oggi.Year, oggi.Month))
-        Console.WriteLine($"[DEBUG] Intervallo: {primoGiornoMese:yyyy-MM-dd} → {ultimoGiornoMese:yyyy-MM-dd}")
+        Try
+            Using conn As New Microsoft.Data.Sqlite.SqliteConnection(connString)
+                conn.Open()
+                Console.WriteLine("[DEBUG] Connessione al database aperta.")
 
-        Dim totaleSpese As Double = 0
+                Dim query As String = "
+            SELECT strftime('%Y-%m', Data) AS Mese,
+                   SUM(Acredito) AS TotEntrate,
+                   SUM(Adebito) AS TotUscite
+            FROM Movimenti
+            WHERE Data BETWEEN @DataInizio AND @DataFine
+            GROUP BY strftime('%Y-%m', Data)
+            ORDER BY Mese ASC"
 
-        Using conn As New SqliteConnection(connString)
-            conn.Open()
-            Console.WriteLine("[DEBUG] Connessione al database aperta.")
+                Using cmd As New Microsoft.Data.Sqlite.SqliteCommand(query, conn)
+                    ' Anno solare corrente
+                    Dim annoCorrente As Integer = DateTime.Now.Year
+                    Dim dataInizio As New DateTime(annoCorrente, 1, 1)
+                    Dim dataFine As DateTime = DateTime.Now
 
-            Using cmd As New SqliteCommand("SELECT SUM(Adebito) FROM Movimenti WHERE Data BETWEEN @start AND @end", conn)
-                cmd.Parameters.AddWithValue("@start", primoGiornoMese.ToString("yyyy-MM-dd"))
-                cmd.Parameters.AddWithValue("@end", ultimoGiornoMese.ToString("yyyy-MM-dd"))
-                Console.WriteLine("[DEBUG] Parametri impostati.")
+                    cmd.Parameters.AddWithValue("@DataInizio", dataInizio.ToString("yyyy-MM-dd"))
+                    cmd.Parameters.AddWithValue("@DataFine", dataFine.ToString("yyyy-MM-dd"))
 
-                Dim result = cmd.ExecuteScalar()
-                Console.WriteLine("[DEBUG] Risultato query: " & If(result IsNot Nothing, result.ToString(), "NULL"))
+                    Using reader As Microsoft.Data.Sqlite.SqliteDataReader = cmd.ExecuteReader()
+                        Dim saldoTotale As Double = 0
 
-                If result IsNot Nothing AndAlso Not IsDBNull(result) Then
-                    totaleSpese = Convert.ToDouble(result)
-                    Console.WriteLine("[DEBUG] Totale spese calcolato: " & totaleSpese)
-                Else
-                    Console.WriteLine("[DEBUG] Nessun dato trovato per il mese corrente.")
-                End If
+                        While reader.Read()
+                            Dim mese As String = reader("Mese").ToString()
+                            Dim entrate As Double = Math.Round(If(IsDBNull(reader("TotEntrate")), 0, Convert.ToDouble(reader("TotEntrate"))), 2)
+                            Dim uscite As Double = Math.Round(If(IsDBNull(reader("TotUscite")), 0, Convert.ToDouble(reader("TotUscite"))), 2)
+                            Dim saldo As Double = Math.Round(entrate - uscite, 2)
+                            saldoTotale += saldo
+
+                            Dim row As DataRow = dt.NewRow()
+                            row("Mese") = mese
+                            row("Entrate") = entrate
+                            row("Uscite") = uscite
+                            row("Saldo") = saldo
+                            dt.Rows.Add(row)
+
+                            Console.WriteLine($"[DEBUG] {mese} → Entrate: {entrate}, Uscite: {uscite}, Saldo: {saldo}")
+                        End While
+
+                        ' Riga finale con saldo totale
+                        Dim rowTotale As DataRow = dt.NewRow()
+                        rowTotale("Mese") = "Totale anno solare " & annoCorrente & " fino a " & dataFine.ToString("dd/MM/yyyy")
+                        rowTotale("Entrate") = Math.Round(dt.AsEnumerable().Sum(Function(r) r.Field(Of Double)("Entrate")), 2)
+                        rowTotale("Uscite") = Math.Round(dt.AsEnumerable().Sum(Function(r) r.Field(Of Double)("Uscite")), 2)
+                        rowTotale("Saldo") = Math.Round(saldoTotale, 2)
+                        dt.Rows.Add(rowTotale)
+
+                        Console.WriteLine("[DEBUG] Saldo totale anno solare " & annoCorrente & ": " & saldoTotale)
+                    End Using
+                End Using
             End Using
-        End Using
+        Catch ex As Exception
+            MessageBox.Show("Errore durante il caricamento andamento anno corrente: " & ex.Message)
+            Console.WriteLine("[DEBUG] Errore CaricaAndamentoAnnoCorrente: " & ex.ToString())
+        End Try
 
-        ChartSpese.Series.Clear()
-        ChartSpese.Titles.Clear()
-        ChartSpese.Titles.Add("Spese " & primoGiornoMese.ToString("MMMM yyyy"))
-        Dim serie As New DataVisualization.Charting.Series("Spese")
-        serie.ChartType = DataVisualization.Charting.SeriesChartType.Column
-        serie.Points.AddXY(primoGiornoMese.ToString("MMMM"), totaleSpese)
-        ChartSpese.Series.Add(serie)
-        Console.WriteLine("[DEBUG] Grafico aggiornato.")
+        Return dt
+    End Function
 
-        lblSpeseMeseCorrente.Text = $"{totaleSpese:F2} €"
-        Console.WriteLine("[DEBUG] Label aggiornata: " & lblSpeseMeseCorrente.Text)
+
+    Private Sub AggiornaSaldoAnnoCorrente()
+        Dim dt As DataTable = CaricaAndamentoAnnoCorrente()
+        saldoattuale.DataSource = dt
+
+        ' Formattazione colonne con due decimali
+        saldoattuale.Columns("Entrate").DefaultCellStyle.Format = "N2"
+        saldoattuale.Columns("Uscite").DefaultCellStyle.Format = "N2"
+        saldoattuale.Columns("Saldo").DefaultCellStyle.Format = "N2"
+
+        Console.WriteLine("[DEBUG] DataTable assegnato a saldoattuale. Righe: " & dt.Rows.Count)
     End Sub
 
-    Private Sub ChartSpese_Click(sender As Object, e As EventArgs) Handles ChartSpese.Click
 
+    Private Sub DisegnaGraficoSaldo(dt As DataTable, chartControl As Chart)
+        Console.WriteLine("[DEBUG] Avvio DisegnaGraficoSaldo.")
+
+        ' Pulizia grafico
+        chartControl.Series.Clear()
+        chartControl.ChartAreas.Clear()
+        chartControl.Titles.Clear()
+
+        ' Area del grafico
+        Dim area As New ChartArea("AreaSaldo")
+        area.AxisX.Title = "Mesi"
+        area.AxisY.Title = "Importi (€)"
+        area.AxisX.Interval = 1
+        chartControl.ChartAreas.Add(area)
+
+        ' Serie Saldo (linea spezzata)
+        Dim serieSaldo As New Series("Saldo")
+        serieSaldo.ChartType = SeriesChartType.Line
+        serieSaldo.Color = System.Drawing.Color.Blue
+        serieSaldo.BorderWidth = 2
+        serieSaldo.XValueType = ChartValueType.String
+
+        ' Popolamento dati: solo righe mese, escludendo Totale
+        For Each row As DataRow In dt.Rows
+            Dim mese As String = row("Mese").ToString()
+            If Not mese.StartsWith("Totale") Then
+                serieSaldo.Points.AddXY(mese, row.Field(Of Double)("Saldo"))
+                Console.WriteLine($"[DEBUG] Grafico Saldo → {mese}: {row("Saldo")}")
+            End If
+        Next
+
+        ' Aggiunta serie al grafico
+        chartControl.Series.Add(serieSaldo)
+
+        ' Titolo
+        chartControl.Titles.Add("Andamento Saldo anno solare " & DateTime.Now.Year)
+
+        Console.WriteLine("[DEBUG] Grafico Saldo completato.")
     End Sub
-
-
 End Class
 
