@@ -246,10 +246,10 @@ Partial Class Form1
         ' 
         ' btnbackup
         ' 
-        btnbackup.Location = New Point(1265, 59)
+        btnbackup.Location = New Point(1334, 12)
         btnbackup.Margin = New Padding(3, 2, 3, 2)
         btnbackup.Name = "btnbackup"
-        btnbackup.Size = New Size(101, 27)
+        btnbackup.Size = New Size(101, 43)
         btnbackup.TabIndex = 23
         btnbackup.Text = "Manutenzione"
         btnbackup.UseVisualStyleBackColor = True
@@ -260,7 +260,7 @@ Partial Class Form1
         btnOpenForm3.Location = New Point(1177, 11)
         btnOpenForm3.Margin = New Padding(3, 2, 3, 2)
         btnOpenForm3.Name = "btnOpenForm3"
-        btnOpenForm3.Size = New Size(189, 44)
+        btnOpenForm3.Size = New Size(151, 44)
         btnOpenForm3.TabIndex = 24
         btnOpenForm3.Text = "Documenti"
         btnOpenForm3.UseVisualStyleBackColor = True
@@ -296,10 +296,10 @@ Partial Class Form1
         ' 
         ' bntInfo
         ' 
-        bntInfo.Location = New Point(1177, 59)
+        bntInfo.Location = New Point(1441, 12)
         bntInfo.Margin = New Padding(3, 2, 3, 2)
         bntInfo.Name = "bntInfo"
-        bntInfo.Size = New Size(82, 27)
+        bntInfo.Size = New Size(82, 43)
         bntInfo.TabIndex = 28
         bntInfo.Text = "Release"
         bntInfo.UseVisualStyleBackColor = True
@@ -387,13 +387,13 @@ Partial Class Form1
         Chart1.ChartAreas.Add(ChartArea1)
         Legend1.Name = "Legend1"
         Chart1.Legends.Add(Legend1)
-        Chart1.Location = New Point(1177, 91)
+        Chart1.Location = New Point(1177, 60)
         Chart1.Name = "Chart1"
         Series1.ChartArea = "ChartArea1"
         Series1.Legend = "Legend1"
         Series1.Name = "Series1"
         Chart1.Series.Add(Series1)
-        Chart1.Size = New Size(459, 132)
+        Chart1.Size = New Size(459, 163)
         Chart1.TabIndex = 38
         Chart1.Text = "Chart1"
         ' 

@@ -82,7 +82,7 @@ Public Class Form1
 
             AggiornaSaldoAnnoCorrente()
             Dim dt As DataTable = CaricaAndamentoAnnoCorrente()
-            DisegnaGraficoSaldo(dt, Chart1)   ' chart1 è il controllo Chart sul form
+            DisegnaGraficoSaldoLinee(dt, Chart1)   ' chart1 è il controllo Chart sul form
 
 
         Catch ex As Exception
@@ -1579,9 +1579,8 @@ Public Class Form1
         Console.WriteLine("[DEBUG] DataTable assegnato a saldoattuale. Righe: " & dt.Rows.Count)
     End Sub
 
-
-    Private Sub DisegnaGraficoSaldo(dt As DataTable, chartControl As Chart)
-        Console.WriteLine("[DEBUG] Avvio DisegnaGraficoSaldo.")
+    Private Sub DisegnaGraficoSaldoLinee(dt As DataTable, chartControl As Chart)
+        Console.WriteLine("[DEBUG] Avvio DisegnaGraficoSaldoLinee.")
 
         ' Pulizia grafico
         chartControl.Series.Clear()
@@ -1591,33 +1590,61 @@ Public Class Form1
         ' Area del grafico
         Dim area As New ChartArea("AreaSaldo")
         area.AxisX.Title = "Mesi"
-        area.AxisY.Title = "Importi (€)"
+        area.AxisY.Title = "Saldo (€)"
         area.AxisX.Interval = 1
+        area.AxisY.LabelStyle.Format = "N2"
         chartControl.ChartAreas.Add(area)
 
-        ' Serie Saldo (linea spezzata)
-        Dim serieSaldo As New Series("Saldo")
-        serieSaldo.ChartType = SeriesChartType.Line
-        serieSaldo.Color = System.Drawing.Color.Blue
-        serieSaldo.BorderWidth = 2
-        serieSaldo.XValueType = ChartValueType.String
+        ' Serie Saldo mensile (linea azzurra scura)
+        Dim serieMensile As New Series("Saldo Mensile")
+        serieMensile.ChartType = SeriesChartType.Line
+        serieMensile.Color = System.Drawing.Color.DarkBlue
+        serieMensile.BorderWidth = 2
+        serieMensile.XValueType = ChartValueType.String
+        serieMensile.IsXValueIndexed = True
+        chartControl.Series.Add(serieMensile)
 
-        ' Popolamento dati: solo righe mese, escludendo Totale
+        ' Serie Saldo cumulativo (linea arancione)
+        Dim serieCumulativo As New Series("Saldo Cumulativo")
+        serieCumulativo.ChartType = SeriesChartType.Line
+        serieCumulativo.Color = System.Drawing.Color.Orange
+        serieCumulativo.BorderWidth = 2
+        serieCumulativo.XValueType = ChartValueType.String
+        serieCumulativo.IsXValueIndexed = True
+        chartControl.Series.Add(serieCumulativo)
+
+        Dim saldoProgressivo As Double = 0
+        Dim countPunti As Integer = 0
+
+        ' Popolamento dati dalla DataTable: colonna 1 = Mese, colonna 4 = Saldo
         For Each row As DataRow In dt.Rows
-            Dim mese As String = row("Mese").ToString()
-            If Not mese.StartsWith("Totale") Then
-                serieSaldo.Points.AddXY(mese, row.Field(Of Double)("Saldo"))
-                Console.WriteLine($"[DEBUG] Grafico Saldo → {mese}: {row("Saldo")}")
+            Dim meseLabel As String = row.Item(0).ToString()
+            If Not meseLabel.StartsWith("Totale", StringComparison.OrdinalIgnoreCase) Then
+                Dim saldoVal As Double = 0
+                If Not row.IsNull(3) Then
+                    Dim obj = row.Item(3)
+                    If TypeOf obj Is Double Then
+                        saldoVal = DirectCast(obj, Double)
+                    Else
+                        Double.TryParse(Convert.ToString(obj), NumberStyles.Any, CultureInfo.InvariantCulture, saldoVal)
+                    End If
+                End If
+
+                ' Linea saldo mensile
+                serieMensile.Points.AddXY(meseLabel, saldoVal)
+
+                ' Linea saldo cumulativo
+                saldoProgressivo += saldoVal
+                serieCumulativo.Points.AddXY(meseLabel, saldoProgressivo)
+
+                countPunti += 1
+                Console.WriteLine($"[DEBUG] {meseLabel}: saldoMensile={saldoVal}, saldoCumulativo={saldoProgressivo}")
             End If
         Next
 
-        ' Aggiunta serie al grafico
-        chartControl.Series.Add(serieSaldo)
-
-        ' Titolo
         chartControl.Titles.Add("Andamento Saldo anno solare " & DateTime.Now.Year)
-
-        Console.WriteLine("[DEBUG] Grafico Saldo completato.")
+        Console.WriteLine("[DEBUG] Grafico SaldoLinee completato. Punti aggiunti: " & countPunti)
     End Sub
+
 End Class
 
