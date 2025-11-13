@@ -1,19 +1,20 @@
-﻿Imports Microsoft.Data.Sqlite
-Imports System.Diagnostics
+﻿Imports System.Diagnostics
 Imports System.IO
+Imports DocumentFormat.OpenXml.Office2010.Word
+Imports Microsoft.Data.Sqlite
 
 Public Class FormInserimentoGuidato
     Private connString As String
     Private tipoPagamento As String
     Private utenteID As Integer
     Private documentsFolderPath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione", "Documenti")
-
+    Private documentId As Integer? ' ID del documento da modificare (opzionale)
 
 
 
 
     ' Modifica il costruttore per accettare anche l'ID utente
-    Public Sub New(connString As String, tipoPagamento As String, utenteID As Integer)
+    Public Sub New(connString As String, tipoPagamento As String, utenteID As Integer, Optional documentId As Integer = Nothing)
         Console.WriteLine("[DEBUG] Inizializzazione form. Parametri ricevuti → connString: " & connString & ", tipoPagamento: " & tipoPagamento & ", utenteID: " & utenteID)
 
         InitializeComponent()
@@ -21,6 +22,7 @@ Public Class FormInserimentoGuidato
         Me.connString = connString
         Me.tipoPagamento = tipoPagamento
         Me.utenteID = utenteID
+        Me.documentId = documentId
 
         txtUtente.Text = $"Utente selezionato: {utenteID}"
         txtTipoPagamento.Text = $"Tipo pagamento selezionato: {tipoPagamento}"
@@ -34,6 +36,9 @@ Public Class FormInserimentoGuidato
 
         Console.WriteLine("[DEBUG] Avvio caricamento documenti per tipo pagamento e utente.")
         LoadDocumentsForTipoPagamentoAndUtente()
+
+        Console.WriteLine("[DEBUG] Avvio selezione documenti per tipo pagamento e utente.")
+        EvidenziaDocumentoSelezionato()
 
         Console.WriteLine("[DEBUG] Avvio caricamento riepilogo scadenze.")
         CaricaRiepilogoScadenze()
@@ -424,5 +429,72 @@ Public Class FormInserimentoGuidato
             Console.WriteLine("[DEBUG] Nessun elemento selezionato.")
         End If
     End Sub
+
+
+    Private Sub EvidenziaDocumentoSelezionato()
+        If documentId > 0 AndAlso dgvDocumenti.Rows.Count > 0 Then
+            For Each row As DataGridViewRow In dgvDocumenti.Rows
+                If Convert.ToInt32(row.Cells("ID").Value) = documentId Then
+                    row.Selected = True
+                    dgvDocumenti.CurrentCell = row.Cells("ID") ' imposta il focus
+                    Console.WriteLine("[DEBUG] Documento evidenziato in dgvDocumenti: ID=" & documentId)
+                    Exit For
+                End If
+            Next
+        End If
+    End Sub
+
+    Private Sub dgvDocumenti_CellDoubleClick(sender As Object, e As DataGridViewCellEventArgs) Handles dgvDocumenti.CellDoubleClick
+        Console.WriteLine("[DEBUG] Doppio click su dgvDocumenti.")
+
+        If e.RowIndex < 0 Then
+            Console.WriteLine("[DEBUG] Click su intestazione, nessuna azione.")
+            Exit Sub
+        End If
+
+        Try
+            Dim row As DataGridViewRow = dgvDocumenti.Rows(e.RowIndex)
+
+            ' Recupero ID documento
+            Dim id As Integer = Convert.ToInt32(row.Cells("ID").Value)
+
+            ' Recupero TipoPagamento
+            Dim tipoPagamento As String = ""
+            If dgvDocumenti.Columns.Contains("TipoPagamento") AndAlso row.Cells("TipoPagamento").Value IsNot Nothing Then
+                tipoPagamento = row.Cells("TipoPagamento").Value.ToString()
+            End If
+
+            ' Recupero UtenteID
+            Dim utenteId As Integer = 0
+            If dgvDocumenti.Columns.Contains("UtenteID") AndAlso row.Cells("UtenteID").Value IsNot Nothing Then
+                Dim tmp As Integer
+                If Integer.TryParse(row.Cells("UtenteID").Value.ToString(), tmp) Then utenteId = tmp
+            End If
+
+            Console.WriteLine($"[DEBUG] Documento selezionato → ID={id}, TipoPagamento={tipoPagamento}, UtenteID={utenteId}")
+
+            ' Conferma apertura
+            Dim result As DialogResult = MessageBox.Show(
+            $"Vuoi aprire il documento {id} per il pagamento: {tipoPagamento} (Utente {utenteId})?",
+            "Conferma",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question
+        )
+
+            If result = DialogResult.Yes Then
+                Console.WriteLine("[DEBUG] Conferma ricevuta. Apro FormNuovoDocumento.")
+                Dim modificaForm As New FormNuovoDocumento(connString, tipoPagamento, utenteId, id)
+                modificaForm.ShowDialog()
+            Else
+                Console.WriteLine("[DEBUG] Apertura annullata dall'utente.")
+            End If
+
+        Catch ex As Exception
+            MessageBox.Show("Errore nell'apertura del documento: " & ex.Message, "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Console.WriteLine("[DEBUG] Errore apertura documento: " & ex.ToString())
+        End Try
+    End Sub
+
+
 
 End Class

@@ -95,6 +95,7 @@ Public Class Form3
 
         ' Carica dati iniziali
         LoadDataIntoDataGridView(keywordSearch, startDate, endDate, documentType, GetSelectedUtenteID(), TextBoxAnno.Text.Trim(), ComboBoxNote.Text.Trim())
+        LoadUltimiDocumenti()
 
         ' Menu contestuale
         contextMenuStrip1.Items.Add(eliminaScadenzaToolStripMenuItem)
@@ -328,7 +329,7 @@ Public Class Form3
         ' Resetta le TextBox
         TextBoxAnno.Clear()
         Console.WriteLine("[DEBUG] TextBoxAnno resettata.")
-        TextBoxImporto.Clear()
+        ' TextBoxImporto.Clear()
         Console.WriteLine("[DEBUG] TextBoxImporto resettata.")
         'txtNomeFile.Clear() ' Scommentare se necessario
 
@@ -384,7 +385,7 @@ Public Class Form3
                     command.Parameters.AddWithValue("@Data", MonthCalendar1.SelectionStart.ToString("yyyy-MM-dd HH:mm:ss"))
                     command.Parameters.AddWithValue("@AnnoRiferimento", TextBoxAnno.Text.Trim())
                     command.Parameters.AddWithValue("@TipoPagamento", ComboBoxTipoPagamento.Text.Trim())
-                    command.Parameters.AddWithValue("@Importo", TextBoxImporto.Text.Trim())
+                    ' command.Parameters.AddWithValue("@Importo", TextBoxImporto.Text.Trim())
                     command.Parameters.AddWithValue("@File", documentFileName)
                     command.Parameters.AddWithValue("@Note", ComboBoxNote.Text.Trim())
 
@@ -733,7 +734,7 @@ Public Class Form3
 
         TextBoxAnno.TabIndex = 0
         ComboBoxTipoPagamento.TabIndex = 1
-        TextBoxImporto.TabIndex = 2
+        'TextBoxImporto.TabIndex = 2
         ComboBoxNote.TabIndex = 3
         'txtNomeFile.TabIndex = 4
         'btnSfogliaFile.TabIndex = 5
@@ -1367,6 +1368,187 @@ Public Class Form3
         Next
         File.WriteAllText(filePath, sb.ToString(), Encoding.UTF8)
     End Sub
+
+    Private Sub LoadUltimiDocumenti()
+        Console.WriteLine("[DEBUG] Avvio caricamento ultimi 10 documenti.")
+
+        Try
+            Using connection As New SqliteConnection(connString)
+                connection.Open()
+                Console.WriteLine("[DEBUG] Connessione al database aperta.")
+
+                ' Aggiungi UtenteID alla SELECT
+                Dim query As String = "
+                SELECT ID, UtenteID, Data, TipoPagamento, Importo, Note
+                FROM Documenti
+                ORDER BY Data DESC
+                LIMIT 10;"
+
+                Using command As New SqliteCommand(query, connection)
+                    Using reader As SqliteDataReader = command.ExecuteReader()
+                        Dim dt As New DataTable()
+                        dt.Columns.Add("ID", GetType(Integer))
+                        dt.Columns.Add("UtenteID", GetType(Integer))
+                        dt.Columns.Add("Data", GetType(String))
+                        dt.Columns.Add("TipoPagamento", GetType(String))
+                        dt.Columns.Add("Importo", GetType(Double))
+                        dt.Columns.Add("Note", GetType(String))
+
+                        Dim rowCount As Integer = 0
+                        While reader.Read()
+                            Dim row As DataRow = dt.NewRow()
+                            row("ID") = Convert.ToInt32(reader("ID"))
+
+                            Dim utenteValue As Integer
+                            If Integer.TryParse(reader("UtenteID").ToString(), utenteValue) Then
+                                row("UtenteID") = utenteValue
+                            Else
+                                row("UtenteID") = 0
+                            End If
+
+                            row("Data") = reader("Data").ToString()
+                            row("TipoPagamento") = reader("TipoPagamento").ToString()
+                            row("Note") = reader("Note").ToString()
+
+                            Dim importoValue As Double
+                            If Double.TryParse(reader("Importo").ToString(), importoValue) Then
+                                row("Importo") = importoValue
+                            Else
+                                row("Importo") = 0
+                            End If
+
+                            dt.Rows.Add(row)
+                            rowCount += 1
+                        End While
+
+                        dgvUltimiDocumenti.DataSource = dt
+                        Console.WriteLine("[DEBUG] Ultimi documenti caricati: " & rowCount)
+                    End Using
+                End Using
+            End Using
+        Catch ex As Exception
+            Console.WriteLine("[DEBUG] Errore in LoadUltimiDocumenti: " & ex.ToString())
+            MessageBox.Show("Errore nel caricamento degli ultimi documenti: " & ex.Message, "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub dgvUltimiDocumenti_CellDoubleClick(sender As Object, e As DataGridViewCellEventArgs) Handles dgvUltimiDocumenti.CellDoubleClick
+        Console.WriteLine("[DEBUG] Doppio click su dgvUltimiDocumenti.")
+
+        If e.RowIndex < 0 Then
+            Console.WriteLine("[DEBUG] Click su intestazione: nessuna azione.")
+            Exit Sub
+        End If
+
+        Try
+            Dim row As DataGridViewRow = dgvUltimiDocumenti.Rows(e.RowIndex)
+
+            ' Lettura diretta dalle celle (senza usare SelectedColumns/SelectedRows e senza parsing da stringa)
+            If Not dgvUltimiDocumenti.Columns.Contains("ID") Then
+                MessageBox.Show("Colonna 'ID' non trovata nella tabella.", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Console.WriteLine("[DEBUG] Colonna 'ID' assente.")
+                Exit Sub
+            End If
+
+            Dim id As Integer = Convert.ToInt32(row.Cells("ID").Value)
+
+            Dim tipoPagamento As String = ""
+            If dgvUltimiDocumenti.Columns.Contains("TipoPagamento") AndAlso row.Cells("TipoPagamento").Value IsNot Nothing Then
+                tipoPagamento = row.Cells("TipoPagamento").Value.ToString()
+            End If
+
+            Dim utenteId As Integer = 0
+            If dgvUltimiDocumenti.Columns.Contains("UtenteID") AndAlso row.Cells("UtenteID").Value IsNot Nothing Then
+                Dim tmp As Integer
+                If Integer.TryParse(row.Cells("UtenteID").Value.ToString(), tmp) Then utenteId = tmp
+            End If
+
+            Console.WriteLine($"[DEBUG] ID={id}, TipoPagamento={tipoPagamento}, UtenteID={utenteId}")
+
+            Dim result As DialogResult = MessageBox.Show(
+                $"Vuoi aprire la scheda per il pagamento: {tipoPagamento} (ID {id}, Utente {utenteId})?",
+                "Conferma",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question
+            )
+
+            If result = DialogResult.Yes Then
+                Console.WriteLine("[DEBUG] Conferma ricevuta. Apro FormInserimentoGuidato e FormNuovoDocumento.")
+                ' Passo anche l'ID al form guidato (così carica la riga specifica se implementato)
+                Dim nuovoForm As New FormInserimentoGuidato(connString, tipoPagamento, utenteId, id)
+                nuovoForm.Show()
+
+                Dim modificaForm As New FormNuovoDocumento(connString, tipoPagamento, utenteId, id)
+                modificaForm.ShowDialog()
+            Else
+                Console.WriteLine("[DEBUG] Apertura annullata dall'utente.")
+            End If
+
+        Catch ex As Exception
+            MessageBox.Show("Errore nell'apertura del documento: " & ex.Message, "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Console.WriteLine("[DEBUG] Errore apertura documento: " & ex.ToString())
+        End Try
+    End Sub
+
+
+    Private Sub dgvDocumenti_CellDoubleClick(sender As Object, e As DataGridViewCellEventArgs) Handles dgvDocumenti.CellDoubleClick
+        Console.WriteLine("[DEBUG] Doppio click su dgvDocumenti.")
+
+        If e.RowIndex < 0 Then
+            Console.WriteLine("[DEBUG] Click su intestazione: nessuna azione.")
+            Exit Sub
+        End If
+
+        Try
+            Dim row As DataGridViewRow = dgvDocumenti.Rows(e.RowIndex)
+
+            ' Lettura diretta dalle celle (senza usare SelectedColumns/SelectedRows e senza parsing da stringa)
+            If Not dgvUltimiDocumenti.Columns.Contains("ID") Then
+                MessageBox.Show("Colonna 'ID' non trovata nella tabella.", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Console.WriteLine("[DEBUG] Colonna 'ID' assente.")
+                Exit Sub
+            End If
+
+            Dim id As Integer = Convert.ToInt32(row.Cells("ID").Value)
+
+            Dim tipoPagamento As String = ""
+            If dgvUltimiDocumenti.Columns.Contains("TipoPagamento") AndAlso row.Cells("TipoPagamento").Value IsNot Nothing Then
+                tipoPagamento = row.Cells("TipoPagamento").Value.ToString()
+            End If
+
+            Dim utenteId As Integer = 0
+            If dgvUltimiDocumenti.Columns.Contains("UtenteID") AndAlso row.Cells("UtenteID").Value IsNot Nothing Then
+                Dim tmp As Integer
+                If Integer.TryParse(row.Cells("UtenteID").Value.ToString(), tmp) Then utenteId = tmp
+            End If
+
+            Console.WriteLine($"[DEBUG] ID={id}, TipoPagamento={tipoPagamento}, UtenteID={utenteId}")
+
+            Dim result As DialogResult = MessageBox.Show(
+                $"Vuoi aprire la scheda per il pagamento: {tipoPagamento} (ID {id}, Utente {utenteId})?",
+                "Conferma",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question
+            )
+
+            If result = DialogResult.Yes Then
+                Console.WriteLine("[DEBUG] Conferma ricevuta. Apro FormInserimentoGuidato e FormNuovoDocumento.")
+                ' Passo anche l'ID al form guidato (così carica la riga specifica se implementato)
+                Dim nuovoForm As New FormInserimentoGuidato(connString, tipoPagamento, utenteId, id)
+                nuovoForm.Show()
+
+                Dim modificaForm As New FormNuovoDocumento(connString, tipoPagamento, utenteId, id)
+                modificaForm.ShowDialog()
+            Else
+                Console.WriteLine("[DEBUG] Apertura annullata dall'utente.")
+            End If
+
+        Catch ex As Exception
+            MessageBox.Show("Errore nell'apertura del documento: " & ex.Message, "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Console.WriteLine("[DEBUG] Errore apertura documento: " & ex.ToString())
+        End Try
+    End Sub
+
 
 
 End Class
