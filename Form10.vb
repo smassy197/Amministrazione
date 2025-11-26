@@ -815,12 +815,25 @@ Public Class FormNuovoDocumento
     ' Gestione evento DragDrop
     Private Sub lstAllegati_DragDrop(sender As Object, e As DragEventArgs) Handles lstAllegati.DragDrop
         Dim files() As String = CType(e.Data.GetData(DataFormats.FileDrop), String())
+
         For Each filePath In files
-            Dim fileName = Path.GetFileName(filePath)
-            lstAllegati.Items.Add(fileName)
-            Console.WriteLine("[DEBUG] File aggiunto: " & fileName)
-            ' Puoi anche salvare/copiare il file in documentsFolderPath se serve
-            ' File.Copy(filePath, Path.Combine(documentsFolderPath, fileName), True)
+            Dim fileName As String = Path.GetFileName(filePath)
+
+            ' Evita duplicati
+            If Not lstAllegati.Items.Contains(fileName) Then
+                lstAllegati.Items.Add(fileName)
+
+                ' Aggiunge anche all'elenco allegati usato dal database
+                If Not allegati.Contains(fileName) Then
+                    allegati.Add(fileName)
+                End If
+
+                Console.WriteLine("[DEBUG] File aggiunto alla lista: " & fileName)
+            End If
         Next
     End Sub
+
+
+
+
 End Class

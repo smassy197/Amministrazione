@@ -59,6 +59,7 @@ Partial Class Form1
         SqliteCommand1 = New Microsoft.Data.Sqlite.SqliteCommand()
         saldoattuale = New DataGridView()
         Chart1 = New DataVisualization.Charting.Chart()
+        Button1 = New Button()
         CType(DataGridView1, ComponentModel.ISupportInitialize).BeginInit()
         Panel1.SuspendLayout()
         CType(saldoattuale, ComponentModel.ISupportInitialize).BeginInit()
@@ -246,10 +247,10 @@ Partial Class Form1
         ' 
         ' btnbackup
         ' 
-        btnbackup.Location = New Point(1334, 12)
+        btnbackup.Location = New Point(1387, 12)
         btnbackup.Margin = New Padding(3, 2, 3, 2)
         btnbackup.Name = "btnbackup"
-        btnbackup.Size = New Size(101, 43)
+        btnbackup.Size = New Size(101, 44)
         btnbackup.TabIndex = 23
         btnbackup.Text = "Manutenzione"
         btnbackup.UseVisualStyleBackColor = True
@@ -260,7 +261,7 @@ Partial Class Form1
         btnOpenForm3.Location = New Point(1177, 11)
         btnOpenForm3.Margin = New Padding(3, 2, 3, 2)
         btnOpenForm3.Name = "btnOpenForm3"
-        btnOpenForm3.Size = New Size(151, 44)
+        btnOpenForm3.Size = New Size(115, 44)
         btnOpenForm3.TabIndex = 24
         btnOpenForm3.Text = "Documenti"
         btnOpenForm3.UseVisualStyleBackColor = True
@@ -296,10 +297,10 @@ Partial Class Form1
         ' 
         ' bntInfo
         ' 
-        bntInfo.Location = New Point(1441, 12)
+        bntInfo.Location = New Point(1494, 12)
         bntInfo.Margin = New Padding(3, 2, 3, 2)
         bntInfo.Name = "bntInfo"
-        bntInfo.Size = New Size(82, 43)
+        bntInfo.Size = New Size(82, 44)
         bntInfo.TabIndex = 28
         bntInfo.Text = "Release"
         bntInfo.UseVisualStyleBackColor = True
@@ -397,11 +398,23 @@ Partial Class Form1
         Chart1.TabIndex = 38
         Chart1.Text = "Chart1"
         ' 
+        ' Button1
+        ' 
+        Button1.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        Button1.Location = New Point(1298, 12)
+        Button1.Margin = New Padding(3, 2, 3, 2)
+        Button1.Name = "Button1"
+        Button1.Size = New Size(83, 43)
+        Button1.TabIndex = 39
+        Button1.Text = "Appunti"
+        Button1.UseVisualStyleBackColor = True
+        ' 
         ' Form1
         ' 
         AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
         ClientSize = New Size(1648, 637)
+        Controls.Add(Button1)
         Controls.Add(Chart1)
         Controls.Add(saldoattuale)
         Controls.Add(btnExport)
@@ -479,4 +492,5 @@ Partial Class Form1
     Friend WithEvents SqliteCommand1 As Microsoft.Data.Sqlite.SqliteCommand
     Friend WithEvents saldoattuale As DataGridView
     Friend WithEvents Chart1 As DataVisualization.Charting.Chart
+    Friend WithEvents Button1 As Button
 End Class

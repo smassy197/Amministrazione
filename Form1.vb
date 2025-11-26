@@ -140,8 +140,6 @@ Public Class Form1
         Return ""
     End Function
 
-
-
     Private Function GetCurrentAppVersion() As String
         Dim currentVersion As String = My.Application.Info.Version.ToString()
         Console.WriteLine("Versione corrente dell'applicazione: " & currentVersion)
@@ -671,6 +669,12 @@ Public Class Form1
 
             MonthCalendar1.UpdateBoldedDates()
             Console.WriteLine("Date evidenziate aggiornate nel calendario.")
+
+            AggiornaSaldoAnnoCorrente()
+            Console.WriteLine("Saldo anno corrente aggiornato")
+            Dim dt As DataTable = CaricaAndamentoAnnoCorrente()
+            DisegnaGraficoSaldoLinee(dt, Chart1)   ' chart1 è il controllo Chart sul form
+            Console.WriteLine("Grafico andamento anno corrente aggiornato.")
 
             ' Reset campi
             txtAcredito.Text = ""
@@ -1646,5 +1650,10 @@ Public Class Form1
         Console.WriteLine("[DEBUG] Grafico SaldoLinee completato. Punti aggiunti: " & countPunti)
     End Sub
 
+    Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
+        Console.WriteLine("[DEBUG] Apertura Form5 e chiusura form corrente.")
+        Dim nuovaForm As New Form5
+        nuovaForm.Show()
+    End Sub
 End Class
 

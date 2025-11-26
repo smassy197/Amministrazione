@@ -124,14 +124,13 @@
   <data name="buttonOpenDatabaseFolder.BackgroundImage" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
     <value>
         iVBORw0KGgoAAAANSUhEUgAAAC8AAAAvCAYAAABzJ5OsAAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAO
-        vAAADrwBlbxySQAAAZNJREFUaEPtmI1xAiEQhSnBEizBEizBElJCSrgOUoIlpARNBZZgCSkB38Mlc1HO
-        4+dcdGa/mR0PFPYBy8LpDMMwDOPt8Ae3ybC1/Pw1gKCVP7pTgZ3RZifN+wIhn/7HfUlxlrACHEBBm6dB
-        ERyAFLMJ7Y7ut+sq1Ion41XA87bWpLtyWsRH2B6D+K60A8yjj/JksIT4VuD/AwPYSzGfFxG/5SpIMR8T
-        34iJvwX1PH33sLOC+dFz3uadET/I9ytVYwpFBhIZ00yJl054gqpfxuBzSGm644F45t7yOGwEfjlpvPxt
-        pGqaSfE8+TrcW4omLSWeo0YHJymqQr/wn3ffSYpnhkHcSVEN+NxxxaU4z614PMeY09+opaGaED+gkx4b
-        lQdVWajeiS+JuQXhhMHvfG4fMxaPT8ac+kaF3+tLDUJWqvL4J75m9AsAv3UJIoqHratG30iT35H4cI+R
-        ajWC39q0/Cc+90heEPhrS8tB/PUluEd6rJ91gsac9XiX5iA0rX7WI+gg+X+KhokEwzAMw3hnnLsAXM6/
-        R2hRiSYAAAAASUVORK5CYII=
+        vAAADrwBlbxySQAAAYJJREFUaEPtmAGNwzAMRQ2hEAZhEAbhIAzCQSiDgzAIg+AMwSAchIPgk7N0yrnt
+        GidpcpP8JEuTo7Q/juO4AzAMwzCMd4MQjgl2kPO6QggDObgr7JsQPuRzukAIn3SDL+lfw+8AL0AxZzdY
+        BC9A+rfw8xz8dN2FXPFMvAuEcMo1+dxkSsRP+NRzcM00JAeUVQxqiC+FEM7k4CL9m/wT8SfeBenfxMQX
+        YuIl4fa9+HK4v1H0O+3wbogfw/jQ1LiEIpylnhlr4sND+AbV199CfNAWNM14IZ5rrz4PCwlB4+bvKMdm
+        rIrnm69D36IK2pL40LPcY18rfNud2u8siucKgzDGvhbwTvOOS/8qUnyUc+0PqjZVF8SPyTlXkXBR6VJ1
+        Jl6TcxVJru0xsfiQc7rVV+D5UYMwyLGX/BGfs/oKZBeISTwf0KzVF1L03ki872Pk+N6EVkAfdeYpPvVK
+        rkhxWfbiHx/BPcpjftSZEPWpl+ZFtLT8qE/I/1FamtRiGIZhGG/JL1zOv0cYSKIIAAAAAElFTkSuQmCC
 </value>
   </data>
   <metadata name="$this.TrayHeight" type="System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">

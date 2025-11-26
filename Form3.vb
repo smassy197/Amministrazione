@@ -838,7 +838,7 @@ Public Class Form3
         Console.WriteLine("[DEBUG] Apertura Form5 e chiusura form corrente.")
         Dim nuovaForm As New Form5
         nuovaForm.Show()
-        Me.Close()
+
     End Sub
 
 

@@ -173,7 +173,7 @@ Partial Class Form3
         Button1.Name = "Button1"
         Button1.Size = New Size(83, 44)
         Button1.TabIndex = 31
-        Button1.Text = "Fogli"
+        Button1.Text = "Appunti"
         Button1.UseVisualStyleBackColor = True
         ' 
         ' rbtnUtente1

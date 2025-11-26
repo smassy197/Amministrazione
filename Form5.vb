@@ -19,6 +19,10 @@ Public Class Form5
     Private WithEvents daDatabaseToolStripMenuItem As ToolStripMenuItem
     Private WithEvents contextMenu As New ContextMenuStrip()
     Private WithEvents toolStripMenuItemIncolla As New ToolStripMenuItem()
+    ' Dichiara la cartella dei modelli
+    Private cartellaModelli As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione", "Modelli")
+    ' Percorso della cartella modelli
+    Private modelliPath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione", "Documenti", "Modelli")
 
 
 
@@ -38,6 +42,8 @@ Public Class Form5
         ' ApriConsole()
         InitializeComponents()
         InitializeFileList()
+        InitializeModelliFolder() ' Assicura che la cartella modelli esista
+        InitializeModelliMenu() ' <-- qui aggiungi il menu Modelli
         richTextBoxDocument.DetectUrls = True ' Abilita il rilevamento dei link
 
     End Sub
@@ -116,6 +122,17 @@ Public Class Form5
         Me.menuStrip1.Items.AddRange(New ToolStripItem() {Me.fileToolStripMenuItem, Me.inserisciToolStripMenuItem, Me.modificaToolStripMenuItem})
     End Sub
 
+    Private Sub InitializeModelliFolder()
+        ' Controlla se la cartella esiste
+        If Not Directory.Exists(modelliPath) Then
+            ' Crea la cartella (e tutte le sottocartelle necessarie)
+            Directory.CreateDirectory(modelliPath)
+            Console.WriteLine("Cartella Modelli creata: " & modelliPath)
+        End If
+    End Sub
+
+
+
     Private Sub InitializeFileList()
 
         ' Imposta il percorso alla cartella dell'applicazione
@@ -129,6 +146,11 @@ Public Class Form5
         ' Carica i file e le cartelle dalla cartella corrente
         LoadFileList(currentFilePath)
     End Sub
+
+    Private Sub AggiornaLista()
+        InitializeFileList()
+    End Sub
+
 
 
 
@@ -262,6 +284,7 @@ Public Class Form5
         Else
             ' Altrimenti, salva direttamente il file esistente
             SaveFile(currentFilePath)
+            AggiornaLista()
         End If
     End Sub
 
@@ -275,6 +298,7 @@ Public Class Form5
 
                 Try
                     SaveFile(currentFilePath)
+                    AggiornaLista()
                 Catch ex As Exception
                     MessageBox.Show("Errore durante il salvataggio del file: " & ex.Message, "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
                 End Try
@@ -503,6 +527,7 @@ Public Class Form5
             ' Se il file esiste già, salvalo direttamente
             SaveFile(currentFilePath)
         End If
+        AggiornaLista()
     End Sub
 
     ' Aggiungi questo codice all'interno della tua classe Form5
@@ -523,6 +548,7 @@ Public Class Form5
             If result = DialogResult.Yes Then
                 Try
                     File.Delete(filePath)
+                    AggiornaLista()
                     Console.WriteLine("File eliminato con successo: " & filePath)
                     MessageBox.Show("File eliminato con successo: " & filePath)
 
@@ -539,16 +565,16 @@ Public Class Form5
         ' richTextBoxDocument.Clear()
     End Sub
 
-    Private Sub btnForm1_Click(sender As Object, e As EventArgs) Handles btnForm1.Click
+    Private Sub btnForm1_Click(sender As Object, e As EventArgs)
         Dim nuovaForm As New Form1
         nuovaForm.Show()
-        Me.Close() ' Chiude la form corrente
+        Close() ' Chiude la form corrente
     End Sub
 
-    Private Sub bntForm3_Click(sender As Object, e As EventArgs) Handles bntForm3.Click
+    Private Sub bntForm3_Click(sender As Object, e As EventArgs)
         Dim nuovaForm As New Form3
         nuovaForm.Show()
-        Me.Close() ' Chiude la form corrente
+        Close() ' Chiude la form corrente
     End Sub
 
     Private Sub buttonOpenDatabaseFolder_Click(sender As Object, e As EventArgs) Handles buttonOpenDatabaseFolder.Click
@@ -666,76 +692,7 @@ Public Class Form5
         Return rtfTable.ToString()
     End Function
 
-    'link-------------------
-    ' Variabili globali per memorizzare il percorso del link e l'inizio della selezione
-    Private linkStart As Integer = -1
-    Private linkTextLength As Integer = 0
-    Private percorsoLink As String = String.Empty
-    Private cartellaDocumenti As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione", "Documenti")
 
-    Private Sub btnInserisciLink_Click(sender As Object, e As EventArgs) Handles btnInserisciLink.Click
-        ' Usa OpenFileDialog per scegliere il file
-        Dim openFileDialog As New OpenFileDialog()
-        openFileDialog.Title = "Seleziona il file da collegare"
-        openFileDialog.InitialDirectory = cartellaDocumenti ' Imposta la cartella iniziale
-
-        If openFileDialog.ShowDialog() = DialogResult.OK Then
-            ' Ottieni il percorso completo del file
-            Dim percorsoCompleto As String = openFileDialog.FileName
-
-            ' Controlla se il percorso contiene spazi
-            If percorsoCompleto.Contains(" ") Then
-                MessageBox.Show("Il percorso non deve avere spazi: " & percorsoCompleto)
-                Return
-            End If
-
-            ' Aggiungi 'file:///' all'inizio del percorso
-            Dim linkText As String = "file:///" & percorsoCompleto.Replace("\", "/")
-
-            ' Visualizza il percorso nella console
-            Console.WriteLine("Percorso del file selezionato: " & linkText)
-
-            ' Imposta la posizione di inizio del link
-            linkStart = richTextBoxDocument.TextLength
-            richTextBoxDocument.AppendText(linkText & vbCrLf)
-            linkTextLength = linkText.Length
-
-            ' Sottolinea il testo del link
-            richTextBoxDocument.Select(linkStart, linkTextLength)
-            richTextBoxDocument.SelectionFont = New Font(richTextBoxDocument.Font, FontStyle.Underline)
-            richTextBoxDocument.DeselectAll()
-        End If
-    End Sub
-
-
-    Private Sub richTextBoxDocument_LinkClicked(sender As Object, e As LinkClickedEventArgs) Handles richTextBoxDocument.LinkClicked
-        Try
-            ' Rimuove 'file:///' dal percorso
-            Dim percorsoCompleto As String = e.LinkText.Replace("file:///", "").Replace("/", "\")
-
-            ' Messaggio in console per il debug
-            Console.WriteLine("Tentativo di apertura del file: " & percorsoCompleto)
-
-            ' Verifica se il file esiste
-            If Not System.IO.File.Exists(percorsoCompleto) Then
-                MessageBox.Show("Il file non esiste: " & percorsoCompleto)
-                Return
-            End If
-
-            ' Assicurati di racchiudere il percorso in virgolette per gestire spazi
-            Dim processStartInfo As New ProcessStartInfo()
-            processStartInfo.FileName = percorsoCompleto
-            processStartInfo.UseShellExecute = True
-
-            ' Avvia il processo
-            Process.Start(processStartInfo)
-        Catch ex As Exception
-            MessageBox.Show("Errore nell'aprire il file: " & ex.Message)
-            Console.WriteLine("Errore nell'aprire il file: " & ex.Message)
-        End Try
-    End Sub
-
-    'fine link----------------
 
     Private Sub btnUndo_Click(sender As Object, e As EventArgs) Handles btnUndo.Click
         If richTextBoxDocument.CanUndo Then
@@ -763,6 +720,58 @@ Public Class Form5
         btnUndo.Enabled = richTextBoxDocument.CanUndo
         btnRedo.Enabled = richTextBoxDocument.CanRedo
     End Sub
+
+    ' Inizializza il menu Modelli
+    ' Richiama questa sub nel InitializeComponents o nel Form5_Load dopo InitializeModelliFolder
+    Private Sub InitializeModelliMenu()
+        ' Crea il menu Modelli
+        Dim modelliMenu As New ToolStripMenuItem("Modelli")
+
+        ' Controlla se ci sono file RTF nella cartella Modelli
+        If Directory.Exists(modelliPath) Then
+            Dim files() As String = Directory.GetFiles(modelliPath, "*.rtf")
+            For Each file As String In files
+                Dim nomeFile As String = Path.GetFileNameWithoutExtension(file)
+                Dim item As New ToolStripMenuItem(nomeFile)
+                ' Associa il click dell'item alla sub che carica il modello
+                AddHandler item.Click, Sub(sender As Object, e As EventArgs)
+                                           InserisciModello(file)
+                                       End Sub
+                modelliMenu.DropDownItems.Add(item)
+            Next
+        End If
+
+        ' Aggiungi il menu alla MenuStrip principale
+        Me.menuStrip1.Items.Add(modelliMenu)
+    End Sub
+
+    ' Sub che inserisce il modello nella RichTextBox
+    Private Sub InserisciModello(filePath As String)
+        Try
+            If File.Exists(filePath) Then
+                richTextBoxDocument.SelectedRtf = File.ReadAllText(filePath)
+            Else
+                MessageBox.Show("Il file modello non esiste: " & filePath, "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            End If
+        Catch ex As Exception
+            MessageBox.Show("Errore nell'inserimento del modello: " & ex.Message)
+        End Try
+    End Sub
+
+
+    ' Metodo per caricare il modello nella RichTextBox
+    Private Sub CaricaModello(filePath As String)
+        Try
+            If File.Exists(filePath) Then
+                richTextBoxDocument.LoadFile(filePath, RichTextBoxStreamType.RichText)
+            Else
+                MessageBox.Show("Il modello non esiste: " & filePath)
+            End If
+        Catch ex As Exception
+            MessageBox.Show("Errore caricando il modello: " & ex.Message)
+        End Try
+    End Sub
+
 
 
 End Class
