@@ -113,8 +113,8 @@
 		-Correzione bug minori e miglioramento prestazioni
 
 	</Description>
-    <AssemblyVersion>8.4.3.0</AssemblyVersion>
-    <FileVersion>8.4.3.0</FileVersion>
+    <AssemblyVersion>8.4.3.1</AssemblyVersion>
+    <FileVersion>8.4.3.1</FileVersion>
     <EnableWindowsFormsHighDpi>true</EnableWindowsFormsHighDpi>
     <ApplicationIcon>amministrazione_new_logo.ico</ApplicationIcon> <!-- Abilita il supporto DPI alto -->
   </PropertyGroup>
