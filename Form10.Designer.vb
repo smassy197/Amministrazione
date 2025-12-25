@@ -46,6 +46,7 @@ Partial Class FormNuovoDocumento
         btnRimuoviAllegato = New Button()
         btnAllegatoUp = New Button()
         btnAllegatoDown = New Button()
+        chkSenzaAllegato = New CheckBox()
         SuspendLayout()
         ' 
         ' btnSalva
@@ -229,6 +230,7 @@ Partial Class FormNuovoDocumento
         ' lstAllegati
         ' 
         lstAllegati.FormattingEnabled = True
+        lstAllegati.ItemHeight = 15
         lstAllegati.Location = New Point(115, 293)
         lstAllegati.Name = "lstAllegati"
         lstAllegati.Size = New Size(508, 169)
@@ -238,16 +240,16 @@ Partial Class FormNuovoDocumento
         ' 
         btnAggiungiAllegato.Location = New Point(23, 293)
         btnAggiungiAllegato.Name = "btnAggiungiAllegato"
-        btnAggiungiAllegato.Size = New Size(75, 76)
+        btnAggiungiAllegato.Size = New Size(86, 63)
         btnAggiungiAllegato.TabIndex = 59
         btnAggiungiAllegato.Text = "Aggiungi allegato"
         btnAggiungiAllegato.UseVisualStyleBackColor = True
         ' 
         ' btnRimuoviAllegato
         ' 
-        btnRimuoviAllegato.Location = New Point(23, 385)
+        btnRimuoviAllegato.Location = New Point(23, 362)
         btnRimuoviAllegato.Name = "btnRimuoviAllegato"
-        btnRimuoviAllegato.Size = New Size(75, 76)
+        btnRimuoviAllegato.Size = New Size(86, 63)
         btnRimuoviAllegato.TabIndex = 60
         btnRimuoviAllegato.Text = "Rimuovi allegato"
         btnRimuoviAllegato.UseVisualStyleBackColor = True
@@ -270,11 +272,22 @@ Partial Class FormNuovoDocumento
         btnAllegatoDown.Text = "Giù"
         btnAllegatoDown.UseVisualStyleBackColor = True
         ' 
+        ' chkSenzaAllegato
+        ' 
+        chkSenzaAllegato.AutoSize = True
+        chkSenzaAllegato.Location = New Point(25, 431)
+        chkSenzaAllegato.Name = "chkSenzaAllegato"
+        chkSenzaAllegato.Size = New Size(85, 19)
+        chkSenzaAllegato.TabIndex = 63
+        chkSenzaAllegato.Text = "no allegato"
+        chkSenzaAllegato.UseVisualStyleBackColor = True
+        ' 
         ' FormNuovoDocumento
         ' 
         AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
         ClientSize = New Size(1114, 474)
+        Controls.Add(chkSenzaAllegato)
         Controls.Add(btnAllegatoDown)
         Controls.Add(btnAllegatoUp)
         Controls.Add(btnRimuoviAllegato)
@@ -330,4 +343,5 @@ Partial Class FormNuovoDocumento
     Friend WithEvents btnRimuoviAllegato As Button
     Friend WithEvents btnAllegatoUp As Button
     Friend WithEvents btnAllegatoDown As Button
+    Friend WithEvents chkSenzaAllegato As CheckBox
 End Class

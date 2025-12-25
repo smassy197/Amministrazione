@@ -30,7 +30,16 @@ Public Class Form3
         Console.WriteLine("[DEBUG] Avvio aggiornamento DataGridView.")
 
         Try
-            LoadDataIntoDataGridView(keywordSearch, startDate, endDate, documentType, GetSelectedUtenteID(), TextBoxAnno.Text.Trim(), ComboBoxNote.Text.Trim())
+            Dim start As Date = If(MonthCalendar1 IsNot Nothing, MonthCalendar1.SelectionStart.Date, Date.MinValue)
+            Dim [end] As Date = If(MonthCalendar1 IsNot Nothing, MonthCalendar1.SelectionEnd.Date, Date.MaxValue)
+            Dim tipo As String = If(ComboBoxTipoPagamento IsNot Nothing, ComboBoxTipoPagamento.Text, String.Empty)
+            Dim anno As String = TextBoxAnno.Text.Trim()
+            Dim note As String = If(ComboBoxNote IsNot Nothing, ComboBoxNote.Text.Trim(), String.Empty)
+            Dim utente As Integer = GetSelectedUtenteID()
+
+            Console.WriteLine($"[DEBUG] AggiornaDataGridView parametri → start={start:yyyy-MM-dd}, end={[end]:yyyy-MM-dd}, tipo='{tipo}', anno='{anno}', note='{note}', utenteID={utente}")
+
+            LoadDataIntoDataGridView(keywordSearch, start, [end], tipo, utente, anno, note)
             Console.WriteLine("[DEBUG] Dati caricati nella griglia.")
 
             HighlightDatesWithDocuments()
@@ -40,7 +49,6 @@ Public Class Form3
             MessageBox.Show("Errore durante l'aggiornamento dei dati: " & ex.Message, "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
-
 
 
     Private Sub Form3_Load(sender As Object, e As EventArgs) Handles MyBase.Load
@@ -125,6 +133,10 @@ Public Class Form3
 
             HighlightDatesWithDocuments()
             Console.WriteLine("[DEBUG] Date con documenti evidenziate.")
+
+            UpdateNotifications()
+            Console.WriteLine("[DEBUG] Notifiche ricaricate.")
+
         Catch ex As Exception
             Console.WriteLine("[DEBUG] Errore in btnReset_Click: " & ex.ToString())
             MessageBox.Show("Errore durante il reset dei filtri: " & ex.Message, "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
@@ -402,7 +414,7 @@ Public Class Form3
         End Try
     End Function
 
-    Private Sub LoadDataIntoDataGridView(keyword As String, start As Date, [end] As Date, type As String, utenteID As Integer, anno As String, note As String)
+    Public Sub LoadDataIntoDataGridView(keyword As String, start As Date, [end] As Date, type As String, utenteID As Integer, anno As String, note As String)
         Console.WriteLine("[DEBUG] Avvio caricamento dati in DataGridView.")
 
         Try
@@ -1369,7 +1381,9 @@ Public Class Form3
         File.WriteAllText(filePath, sb.ToString(), Encoding.UTF8)
     End Sub
 
-    Private Sub LoadUltimiDocumenti()
+
+
+    Public Sub LoadUltimiDocumenti()
         Console.WriteLine("[DEBUG] Avvio caricamento ultimi 10 documenti.")
 
         Try
@@ -1551,4 +1565,66 @@ Public Class Form3
 
 
 
+    ' Metodo pubblico per aggiornare le notifiche (lblNotifica)
+    Public Sub UpdateNotifications()
+        Console.WriteLine("[DEBUG] Aggiornamento notifiche tramite UpdateNotifications.")
+        Try
+            TimerScadenze_Tick(Nothing, Nothing)
+        Catch ex As Exception
+            Console.WriteLine("[DEBUG] Errore in UpdateNotifications: " & ex.ToString())
+        End Try
+    End Sub
+
+    Public Sub CaricaRiepilogoScadenze()
+        Console.WriteLine("[DEBUG] Avvio CaricaRiepilogoScadenze (Form3).")
+
+        Try
+            Using connection As New SqliteConnection(connString)
+                connection.Open()
+                Console.WriteLine("[DEBUG] Connessione al database aperta per riepilogo scadenze.")
+
+                Dim query As String = "SELECT ID, Note, Scadenza, TipoPagamento, UtenteID FROM Documenti WHERE Scadenza IS NOT NULL AND Scadenza >= @Oggi ORDER BY Scadenza ASC"
+
+                Using command As New SqliteCommand(query, connection)
+                    command.Parameters.AddWithValue("@Oggi", DateTime.Now.ToString("yyyy-MM-dd"))
+
+                    Using reader As SqliteDataReader = command.ExecuteReader()
+                        ' Cerca il controllo ListBox in tutta la gerarchia dei controlli
+                        Dim found() As Control = Me.Controls.Find("lstRiepilogoScadenze", True)
+                        Dim lst As ListBox = Nothing
+                        If found.Length > 0 AndAlso TypeOf found(0) Is ListBox Then
+                            lst = DirectCast(found(0), ListBox)
+                            lst.Items.Clear()
+                        End If
+
+                        Dim count As Integer = 0
+                        While reader.Read()
+                            Dim id As Integer = Convert.ToInt32(reader("ID"))
+                            Dim nota As String = If(reader.IsDBNull(reader.GetOrdinal("Note")), "", reader("Note").ToString())
+                            Dim scadenza As DateTime = Convert.ToDateTime(reader("Scadenza"))
+                            Dim tipoPagamento As String = If(reader.IsDBNull(reader.GetOrdinal("TipoPagamento")), "", reader("TipoPagamento").ToString())
+                            Dim utenteId As Integer = If(reader.IsDBNull(reader.GetOrdinal("UtenteID")), 0, Convert.ToInt32(reader("UtenteID")))
+                            Dim giorniRimanenti As Integer = (scadenza - DateTime.Now).Days
+
+                            Dim riepilogo As String = $"{id} - {scadenza:dd/MM/yyyy} - {nota} ({giorniRimanenti} giorni rimanenti) - {tipoPagamento} - Utente: {utenteId}"
+
+                            If lst IsNot Nothing Then
+                                lst.Items.Add(riepilogo)
+                            Else
+                                Console.WriteLine("[DEBUG] Riepilogo scadenza: " & riepilogo)
+                            End If
+
+                            count += 1
+                        End While
+
+                        Console.WriteLine("[DEBUG] Righe riepilogo scadenze lette: " & count)
+                    End Using
+                End Using
+            End Using
+        Catch ex As Exception
+            Console.WriteLine("[DEBUG] Errore CaricaRiepilogoScadenze: " & ex.ToString())
+            MessageBox.Show("Errore durante il caricamento del riepilogo delle scadenze: " & ex.Message, "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+
+    End Sub
 End Class

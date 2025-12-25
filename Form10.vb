@@ -198,9 +198,11 @@ Public Class FormNuovoDocumento
             Return
         End If
 
-        If allegati.Count = 0 Then
-            MessageBox.Show("Devi inserire almeno un allegato.")
-            Console.WriteLine("[DEBUG] Nessun allegato presente.")
+        ' Nuova logica: se non è selezionato "Senza allegato" allora è obbligatorio avere almeno un allegato
+        ' Assicurati di avere in form un CheckBox chiamato `chkSenzaAllegato`
+        If Not chkSenzaAllegato.Checked AndAlso allegati.Count = 0 Then
+            MessageBox.Show("Devi inserire almeno un allegato oppure selezionare 'Senza allegato'.")
+            Console.WriteLine("[DEBUG] Nessun allegato presente e 'Senza allegato' non selezionato.")
             Return
         End If
 
@@ -322,10 +324,10 @@ Public Class FormNuovoDocumento
             End Try
         End If
     End Sub
-
     Private Sub ResetCampi()
         Console.WriteLine("[DEBUG] Avvio ResetCampi.")
 
+        chkSenzaAllegato.Checked = False
         TextBoxAnno.Text = ""
         TextBoxNote.Text = ""
         TextBoxImporto.Text = ""
@@ -538,14 +540,32 @@ Public Class FormNuovoDocumento
     End Function
 
 
+    ' Modifica il gestore FormNuovoDocumento_FormClosed in FormNuovoDocumento
     Private Sub FormNuovoDocumento_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
-        Console.WriteLine("[DEBUG] FormNuovoDocumento chiuso. Verifica presenza di Form3.")
+        Console.WriteLine("[DEBUG] FormNuovoDocumento chiuso. Aggiorno FormInserimentoGuidato (se presente).")
 
-        For Each form As Form In Application.OpenForms
-            If TypeOf form Is Form3 Then
-                Console.WriteLine("[DEBUG] Form3 rilevato. Aggiornamento interfaccia in corso.")
-                DirectCast(form, Form3).AggiornaDataGridView()
-                DirectCast(form, Form3).HighlightDatesWithDocuments()
+        For Each frm As Form In Application.OpenForms
+            If TypeOf frm Is FormInserimentoGuidato Then
+                Dim f = DirectCast(frm, FormInserimentoGuidato)
+
+                Try
+                    f.LoadDocumentsForTipoPagamentoAndUtente()
+                Catch ex As Exception
+                    Console.WriteLine("[DEBUG] Errore LoadDocumentsForTipoPagamentoAndUtente: " & ex.ToString())
+                End Try
+
+                Try
+                    f.CaricaRiepilogoScadenze()
+                Catch ex As Exception
+                    Console.WriteLine("[DEBUG] Errore CaricaRiepilogoScadenze: " & ex.ToString())
+                End Try
+
+                Try
+                    f.UpdateNotifications()
+                Catch ex As Exception
+                    Console.WriteLine("[DEBUG] Errore UpdateNotifications: " & ex.ToString())
+                End Try
+
                 Exit For
             End If
         Next
@@ -818,18 +838,36 @@ Public Class FormNuovoDocumento
 
         For Each filePath In files
             Dim fileName As String = Path.GetFileName(filePath)
+            Dim destPath As String = Path.Combine(documentsFolderPath, fileName)
 
-            ' Evita duplicati
-            If Not lstAllegati.Items.Contains(fileName) Then
-                lstAllegati.Items.Add(fileName)
+            Console.WriteLine("[DEBUG] Drag & Drop file rilevato: " & filePath)
 
-                ' Aggiunge anche all'elenco allegati usato dal database
+            Try
+                ' Copia fisica nella cartella Documenti
+                If Not File.Exists(destPath) Then
+                    File.Copy(filePath, destPath)
+                    Console.WriteLine("[DEBUG] File copiato in: " & destPath)
+                Else
+                    Console.WriteLine("[DEBUG] File già presente nella cartella.")
+                End If
+
+                ' Aggiunge nella lista visiva
+                If Not lstAllegati.Items.Contains(fileName) Then
+                    lstAllegati.Items.Add(fileName)
+                End If
+
+                ' Aggiunge alla lista per Database
                 If Not allegati.Contains(fileName) Then
                     allegati.Add(fileName)
                 End If
 
-                Console.WriteLine("[DEBUG] File aggiunto alla lista: " & fileName)
-            End If
+                Console.WriteLine("[DEBUG] File aggiunto correttamente: " & fileName)
+
+            Catch ex As Exception
+                MessageBox.Show("Errore durante il drag & drop: " & ex.Message)
+                Console.WriteLine("[DEBUG] Errore DragDrop: " & ex.ToString())
+            End Try
+
         Next
     End Sub
 

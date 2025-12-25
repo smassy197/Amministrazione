@@ -45,7 +45,7 @@ Public Class FormInserimentoGuidato
     End Sub
 
 
-    Private Sub LoadDocumentsForTipoPagamentoAndUtente()
+    Public Sub LoadDocumentsForTipoPagamentoAndUtente()
         Console.WriteLine("[DEBUG] Avvio caricamento documenti per tipo pagamento: " & tipoPagamento & ", utenteID: " & utenteID)
 
         Try
@@ -288,20 +288,30 @@ Public Class FormInserimentoGuidato
         End Try
     End Sub
 
-    Private Sub FormInserimentoGuidato_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
-        Console.WriteLine("[DEBUG] FormInserimentoGuidato chiuso. Verifica presenza di Form3.")
+    ' Aggiungi in fondo alla classe FormInserimentoGuidato
+    Public Sub UpdateNotifications()
+        Console.WriteLine("[DEBUG] UpdateNotifications (FormInserimentoGuidato) avviato.")
+        Try
+            ' Richiama il calcolo interno che aggiorna lblNotifica
+            TimerScadenze_Tick(Nothing, Nothing)
+        Catch ex As Exception
+            Console.WriteLine("[DEBUG] Errore in UpdateNotifications: " & ex.ToString())
+        End Try
+    End Sub
 
+    Private Sub FormInserimentoGuidato_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
         For Each form As Form In Application.OpenForms
             If TypeOf form Is Form3 Then
-                Console.WriteLine("[DEBUG] Form3 rilevato. Eseguo aggiornamento controlli.")
-                DirectCast(form, Form3).ResetFormControls()
-                DirectCast(form, Form3).AggiornaDataGridView()
-                DirectCast(form, Form3).HighlightDatesWithDocuments()
+                Dim f3 = DirectCast(form, Form3)
+                ' ricarica completa senza filtri per test
+                f3.LoadDataIntoDataGridView("", Date.MinValue, Date.MaxValue, "", 0, "", "")
+                f3.LoadUltimiDocumenti()
+                f3.CaricaRiepilogoScadenze()
+                f3.UpdateNotifications()
                 Exit For
             End If
         Next
     End Sub
-
 
     'timer scadenza e menu contestuale-----------------------------------------------------------------------
     Private Sub TimerScadenze_Tick(sender As Object, e As EventArgs) Handles TimerScadenze.Tick
@@ -356,7 +366,7 @@ Public Class FormInserimentoGuidato
 
     '--------------------------------------------------------------------------------------------------------
 
-    Private Sub CaricaRiepilogoScadenze()
+    Public Sub CaricaRiepilogoScadenze()
         Console.WriteLine("[DEBUG] Avvio CaricaRiepilogoScadenze.")
 
         Try
@@ -431,7 +441,7 @@ Public Class FormInserimentoGuidato
     End Sub
 
 
-    Private Sub EvidenziaDocumentoSelezionato()
+    Public Sub EvidenziaDocumentoSelezionato()
         If documentId > 0 AndAlso dgvDocumenti.Rows.Count > 0 Then
             For Each row As DataGridViewRow In dgvDocumenti.Rows
                 If Convert.ToInt32(row.Cells("ID").Value) = documentId Then
