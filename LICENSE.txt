@@ -1,7 +1,7 @@
 Copyright (c) 2024-2025 Massimiliano Scarzella - Amministrazione - All rights reserved. 
 
 -----------------------------------------------------------------------
-Versione 8.4.3.1 25/12/2025
+Versione 8.4.3.0 25/12/2025
 Max Scarzella
 scarzellam@gmail.com
 -----------------------------------------------------------------------
