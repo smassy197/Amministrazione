@@ -360,10 +360,10 @@ Public Class Form1
 
             If lines.Length >= 2 Then
                 Dim storedPasswordLine As String = lines(1)
-                Console.WriteLine("Riga password letta: " & storedPasswordLine)
+
 
                 Dim storedPassword As String = storedPasswordLine.Substring("password: ".Length).Trim()
-                Console.WriteLine("Password salvata (mascherata): " & New String("*"c, storedPassword.Length))
+
 
                 Dim enteredPassword As String = GetPassword()
                 Console.WriteLine("Password inserita (mascherata): " & New String("*"c, enteredPassword.Length))
