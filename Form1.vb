@@ -482,6 +482,7 @@ Public Class Form1
                         dt.Columns.Add("Adebito", GetType(Double))
                         dt.Columns.Add("Acredito", GetType(Double))
                         dt.Columns.Add("Nota", GetType(String))
+                        dt.Columns.Add("BankAccount", GetType(String)) ' aggiunta colonna BankAccount
 
                         While reader.Read()
                             Dim row As DataRow = dt.NewRow()
@@ -509,6 +510,9 @@ Public Class Form1
 
                             ' Nota
                             row("Nota") = If(reader("Nota") IsNot DBNull.Value, reader("Nota").ToString(), "")
+
+                            ' BankAccount (se presente)
+                            row("BankAccount") = If(reader("BankAccount") IsNot DBNull.Value, reader("BankAccount").ToString(), "HelloBank")
 
                             dt.Rows.Add(row)
                         End While
@@ -634,6 +638,7 @@ Public Class Form1
         INSERT INTO Movimenti (Data, Conto, Descrizione, Adebito, Acredito, Nota, BankAccount)
         VALUES (@data, @conto, @descrizione, @addebito, @acredito, @nota, @bankaccount)"
 
+
                 Using cmd As New SqliteCommand(insertMovimentiQuery, conn)
                     Dim dataStr = MonthCalendar1.SelectionStart.ToString("yyyy-MM-dd")
                     Dim conto = cmbConto.Text
@@ -754,7 +759,58 @@ Public Class Form1
         DataGridView1.DataSource = dt
     End Sub
 
+    Private Function ReadLastBank(filePath As String) As String
+        Try
+            If File.Exists(filePath) Then
+                Dim content = File.ReadAllText(filePath).Trim()
+                If Not String.IsNullOrWhiteSpace(content) Then
+                    Console.WriteLine("[DEBUG] lastbank letto: " & content)
+                    Return content
+                End If
+            End If
+        Catch ex As Exception
+            Console.WriteLine("[DEBUG] Errore ReadLastBank: " & ex.ToString())
+        End Try
+        Return ""
+    End Function
 
+    Private Sub SaveLastBank(filePath As String, bankName As String)
+        Try
+            File.WriteAllText(filePath, If(bankName, ""))
+            Console.WriteLine("[DEBUG] lastbank salvato: " & bankName)
+        Catch ex As Exception
+            Console.WriteLine("[DEBUG] Errore SaveLastBank: " & ex.ToString())
+        End Try
+    End Sub
+    Private Sub cmbBankAccount_SelectedIndexChanged(sender As Object, e As EventArgs)
+        Try
+            Dim databaseFolder As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione")
+            Directory.CreateDirectory(databaseFolder)
+            Dim lastBankFile As String = Path.Combine(databaseFolder, "lastbank.txt")
+
+            Dim cb As ComboBox = TryCast(sender, ComboBox)
+            If cb Is Nothing Then Return
+
+            Dim selectedName As String = ""
+            If cb.SelectedItem IsNot Nothing Then
+                ' quando il combobox è bound a DataTable gli elementi sono DataRowView
+                Dim drv = TryCast(cb.SelectedItem, DataRowView)
+                If drv IsNot Nothing Then
+                    selectedName = drv("Name").ToString()
+                Else
+                    selectedName = cb.Text
+                End If
+            End If
+
+            If Not String.IsNullOrWhiteSpace(selectedName) Then
+                SaveLastBank(lastBankFile, selectedName)
+            End If
+        Catch ex As Exception
+            Console.WriteLine("[DEBUG] Errore cmbBankAccount_SelectedIndexChanged: " & ex.ToString())
+        End Try
+    End Sub
+
+    ' Sostituisci il corpo di LoadDataIntoComboboxes con questo aggiornato (modifica minima e poco invasiva)
     Private Sub LoadDataIntoComboboxes()
         Dim databaseFolder As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione")
         Dim databasePath As String = Path.Combine(databaseFolder, "amministrazione.db")
@@ -808,6 +864,32 @@ Public Class Form1
                         cmbBankAccount.DataSource = dtBank.Copy()
                         cmbBankAccount.DisplayMember = "Name"
 
+                        ' Aggiungo handler per salvare la selezione su file (gestione rimozione/riaggiunta per evitare doppie iscrizioni)
+                        Try
+                            RemoveHandler cmbBankAccount.SelectedIndexChanged, AddressOf cmbBankAccount_SelectedIndexChanged
+                        Catch
+                        End Try
+                        AddHandler cmbBankAccount.SelectedIndexChanged, AddressOf cmbBankAccount_SelectedIndexChanged
+
+                        ' Ripristina ultimo conto selezionato da lastbank.txt (se presente)
+                        Try
+                            Directory.CreateDirectory(databaseFolder)
+                            Dim lastBankFile As String = Path.Combine(databaseFolder, "lastbank.txt")
+                            Dim lastBankName As String = ReadLastBank(lastBankFile)
+                            If Not String.IsNullOrWhiteSpace(lastBankName) Then
+                                For i As Integer = 0 To cmbBankAccount.Items.Count - 1
+                                    Dim drv = TryCast(cmbBankAccount.Items(i), DataRowView)
+                                    Dim name As String = If(drv IsNot Nothing, drv("Name").ToString(), cmbBankAccount.Items(i).ToString())
+                                    If String.Equals(name, lastBankName, StringComparison.OrdinalIgnoreCase) Then
+                                        cmbBankAccount.SelectedIndex = i
+                                        Exit For
+                                    End If
+                                Next
+                            End If
+                        Catch ex As Exception
+                            Console.WriteLine("[DEBUG] Errore ripristino lastbank: " & ex.ToString())
+                        End Try
+
                         ' cmbAccountFilter per filtro vista: prima voce "Tutti i conti bancari"
                         Dim dtFilter As New DataTable()
                         dtFilter.Columns.Add("Name", GetType(String))
@@ -831,6 +913,7 @@ Public Class Form1
 
         Console.WriteLine("Caricamento ComboBox completato.")
     End Sub
+
 
     'parte dedicata ai totali e alla ricerca
     Private Function GetUniqueContiFromMovimenti() As List(Of String)
@@ -1121,7 +1204,6 @@ Public Class Form1
 
         Dim databasePath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione", "amministrazione.db")
         Dim connString As String = "Data Source=" & databasePath
-        Console.WriteLine("[DEBUG] Percorso database: " & databasePath)
 
         Try
             Using conn As New Microsoft.Data.Sqlite.SqliteConnection(connString)

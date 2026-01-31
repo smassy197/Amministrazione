@@ -114,8 +114,8 @@
 		-Inserimento Conti Correnti multipli
 
 	</Description>
-    <AssemblyVersion>8.4.3.5</AssemblyVersion>
-    <FileVersion>8.4.3.5</FileVersion>
+    <AssemblyVersion>8.4.3.6</AssemblyVersion>
+    <FileVersion>8.4.3.6</FileVersion>
     <EnableWindowsFormsHighDpi>true</EnableWindowsFormsHighDpi>
     <ApplicationIcon>amministrazione_new_logo.ico</ApplicationIcon> <!-- Abilita il supporto DPI alto -->
   </PropertyGroup>
