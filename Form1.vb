@@ -16,7 +16,7 @@ Imports Microsoft.Data.Sqlite
 
 Public Class Form1
     Private txtPassword As New TextBox()
-    'Private cmbMonthFilter As ComboBox
+    '\Private cmbMonthFilter As ComboBox
 
 
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
@@ -1289,7 +1289,7 @@ Public Class Form1
         Dim databasePath As String = Path.Combine(databaseFolder, "amministrazione.db")
         Dim connString As String = "Data Source=" & databasePath
 
-        Using conn As New SQLiteConnection(connString)
+        Using conn As New SqliteConnection(connString)
             conn.Open()
 
             Using cmd As New SqliteCommand("SELECT * FROM Movimenti WHERE Conto = @conto AND Data BETWEEN @startDate AND @endDate", conn)
@@ -1531,8 +1531,8 @@ Public Class Form1
 
 
 
-    Private Function CaricaAndamentoAnnoCorrente() As DataTable
-        Console.WriteLine("[DEBUG] Avvio CaricaAndamentoAnnoCorrente.")
+    Private Function CaricaAndamentoAnnoCorrente(Optional bankFilter As String = "") As DataTable
+        Console.WriteLine("[DEBUG] Avvio CaricaAndamentoAnnoCorrente. BankFilter: " & If(String.IsNullOrWhiteSpace(bankFilter), "(tutti)", bankFilter))
 
         Dim dt As New DataTable()
         dt.Columns.Add("Mese", GetType(String))
@@ -1548,57 +1548,99 @@ Public Class Form1
                 conn.Open()
                 Console.WriteLine("[DEBUG] Connessione al database aperta.")
 
+                Dim annoCorrente As Integer = DateTime.Now.Year
+                Dim dataInizio As New DateTime(annoCorrente, 1, 1)
+                Dim dataFine As DateTime = DateTime.Now
+
+                ' calcolo saldo iniziale (InitialBalance + delta prima dell'inizio dell'anno) se è selezionato un conto bancario
+                Dim startingBalance As Double = 0
+                If Not String.IsNullOrWhiteSpace(bankFilter) Then
+                    Using cmdInit As New Microsoft.Data.Sqlite.SqliteCommand("SELECT COALESCE(InitialBalance,0) FROM BankAccounts WHERE Name = @bank", conn)
+                        cmdInit.Parameters.AddWithValue("@bank", bankFilter)
+                        Dim v = cmdInit.ExecuteScalar()
+                        Dim initBal As Double = 0
+                        If v IsNot Nothing AndAlso Double.TryParse(v.ToString(), initBal) Then initBal = initBal
+                        ' delta prima dell'anno
+                        Using cmdBefore As New Microsoft.Data.Sqlite.SqliteCommand("SELECT COALESCE(SUM(Acredito),0) - COALESCE(SUM(Adebito),0) FROM Movimenti WHERE BankAccount = @bank AND Data < @start", conn)
+                            cmdBefore.Parameters.AddWithValue("@bank", bankFilter)
+                            cmdBefore.Parameters.AddWithValue("@start", dataInizio.ToString("yyyy-MM-dd"))
+                            Dim vb = cmdBefore.ExecuteScalar()
+                            Dim deltaBefore As Double = 0
+                            If vb IsNot Nothing AndAlso Double.TryParse(vb.ToString(), deltaBefore) Then deltaBefore = deltaBefore
+                            startingBalance = initBal + deltaBefore
+                        End Using
+                    End Using
+                End If
+
                 Dim query As String = "
-    SELECT strftime('%Y-%m', Data) AS Mese,
-           SUM(Acredito) AS TotEntrate,
-           SUM(Adebito) AS TotUscite
-    FROM Movimenti
-    WHERE Data BETWEEN @DataInizio AND @DataFine
-    GROUP BY strftime('%Y-%m', Data)
-    ORDER BY Mese ASC"
+SELECT strftime('%Y-%m', Data) AS Mese,
+       SUM(Acredito) AS TotEntrate,
+       SUM(Adebito) AS TotUscite
+FROM Movimenti
+WHERE Data BETWEEN @DataInizio AND @DataFine"
+
+                If Not String.IsNullOrWhiteSpace(bankFilter) Then
+                    query &= " AND BankAccount = @bank"
+                End If
+
+                query &= "
+GROUP BY strftime('%Y-%m', Data)
+ORDER BY Mese ASC"
 
                 Using cmd As New Microsoft.Data.Sqlite.SqliteCommand(query, conn)
-                    ' Anno solare corrente
-                    Dim annoCorrente As Integer = DateTime.Now.Year
-                    Dim dataInizio As New DateTime(annoCorrente, 1, 1)
-                    Dim dataFine As DateTime = DateTime.Now
-
                     cmd.Parameters.AddWithValue("@DataInizio", dataInizio.ToString("yyyy-MM-dd"))
                     cmd.Parameters.AddWithValue("@DataFine", dataFine.ToString("yyyy-MM-dd"))
+                    If Not String.IsNullOrWhiteSpace(bankFilter) Then
+                        cmd.Parameters.AddWithValue("@bank", bankFilter)
+                    End If
 
+                    Dim temp As New DataTable()
                     Using reader As Microsoft.Data.Sqlite.SqliteDataReader = cmd.ExecuteReader()
-                        Dim saldoTotale As Double = 0
-
-                        While reader.Read()
-                            Dim mese As String = reader("Mese").ToString()
-                            Dim entrate As Double = Math.Round(If(IsDBNull(reader("TotEntrate")), 0, Convert.ToDouble(reader("TotEntrate"))), 2)
-                            Dim uscite As Double = Math.Round(If(IsDBNull(reader("TotUscite")), 0, Convert.ToDouble(reader("TotUscite"))), 2)
-                            Dim saldo As Double = Math.Round(entrate - uscite, 2)
-                            saldoTotale += saldo
-
-                            Dim row As DataRow = dt.NewRow()
-                            row("Mese") = mese
-                            row("Entrate") = entrate
-                            row("Uscite") = uscite
-                            row("Saldo") = saldo
-                            dt.Rows.Add(row)
-
-                            Console.WriteLine($"[DEBUG] {mese} → Entrate: {entrate}, Uscite: {uscite}, Saldo: {saldo}")
-                        End While
-
-                        ' Riga finale con saldo totale
-                        Dim rowTotale As DataRow = dt.NewRow()
-                        rowTotale("Mese") = "Totale anno solare " & annoCorrente & " fino a " & dataFine.ToString("dd/MM/yyyy")
-                        rowTotale("Entrate") = Math.Round(dt.AsEnumerable().Sum(Function(r) r.Field(Of Double)("Entrate")), 2)
-                        rowTotale("Uscite") = Math.Round(dt.AsEnumerable().Sum(Function(r) r.Field(Of Double)("Uscite")), 2)
-                        rowTotale("Saldo") = Math.Round(saldoTotale, 2)
-                        dt.Rows.Add(rowTotale)
-
-                        Console.WriteLine("[DEBUG] Saldo totale anno solare " & annoCorrente & ": " & saldoTotale)
+                        temp.Load(reader)
                     End Using
+
+                    Dim saldoTotaleDelta As Double = 0
+                    For i As Integer = 0 To temp.Rows.Count - 1
+                        Dim mese As String = temp.Rows(i)("Mese").ToString()
+                        Dim entrate As Double = Math.Round(If(IsDBNull(temp.Rows(i)("TotEntrate")), 0, Convert.ToDouble(temp.Rows(i)("TotEntrate"))), 2)
+                        Dim uscite As Double = Math.Round(If(IsDBNull(temp.Rows(i)("TotUscite")), 0, Convert.ToDouble(temp.Rows(i)("TotUscite"))), 2)
+                        Dim deltaMensile As Double = Math.Round(entrate - uscite, 2)
+
+                        Dim saldoMensileForRow As Double
+                        If i = 0 AndAlso Not String.IsNullOrWhiteSpace(bankFilter) Then
+                            ' al primo mese aggiungiamo lo startingBalance così la serie cumulativa parte dal saldo reale
+                            saldoMensileForRow = startingBalance + deltaMensile
+                        Else
+                            saldoMensileForRow = deltaMensile
+                        End If
+
+                        saldoTotaleDelta += deltaMensile
+
+                        Dim row As DataRow = dt.NewRow()
+                        row("Mese") = mese
+                        row("Entrate") = entrate
+                        row("Uscite") = uscite
+                        row("Saldo") = Math.Round(saldoMensileForRow, 2)
+                        dt.Rows.Add(row)
+
+                        Console.WriteLine($"[DEBUG] {mese} → Entrate: {entrate}, Uscite: {uscite}, DeltaMensile: {deltaMensile}, SaldoRow: {saldoMensileForRow}")
+                    Next
+
+                    ' Riga finale con saldo totale (se filtro bancario: startingBalance + somma delta; altrimenti somma delta)
+                    Dim rowTotale As DataRow = dt.NewRow()
+                    rowTotale("Mese") = "Totale anno solare " & annoCorrente & " fino a " & dataFine.ToString("dd/MM/yyyy")
+                    rowTotale("Entrate") = If(dt.Rows.Count > 0, Math.Round(dt.AsEnumerable().Sum(Function(r) r.Field(Of Double)("Entrate")), 2), 0)
+                    rowTotale("Uscite") = If(dt.Rows.Count > 0, Math.Round(dt.AsEnumerable().Sum(Function(r) r.Field(Of Double)("Uscite")), 2), 0)
+                    If Not String.IsNullOrWhiteSpace(bankFilter) Then
+                        rowTotale("Saldo") = Math.Round(startingBalance + saldoTotaleDelta, 2)
+                    Else
+                        rowTotale("Saldo") = Math.Round(saldoTotaleDelta, 2)
+                    End If
+                    dt.Rows.Add(rowTotale)
+
+                    Console.WriteLine("[DEBUG] Saldo totale anno solare " & annoCorrente & ": " & If(String.IsNullOrWhiteSpace(bankFilter), saldoTotaleDelta, startingBalance + saldoTotaleDelta))
                 End Using
             End Using
-
         Catch ex As Exception
             MessageBox.Show("Errore durante il caricamento andamento anno corrente: " & ex.Message)
             Console.WriteLine("[DEBUG] Errore CaricaAndamentoAnnoCorrente: " & ex.ToString())
@@ -1608,16 +1650,16 @@ Public Class Form1
     End Function
 
 
-    Private Sub AggiornaSaldoAnnoCorrente()
-        Dim dt As DataTable = CaricaAndamentoAnnoCorrente()
+    Private Sub AggiornaSaldoAnnoCorrente(Optional bankFilter As String = "")
+        Dim dt As DataTable = CaricaAndamentoAnnoCorrente(bankFilter)
         saldoattuale.DataSource = dt
 
-        ' Formattazione colonne con due decimali
-        saldoattuale.Columns("Entrate").DefaultCellStyle.Format = "N2"
-        saldoattuale.Columns("Uscite").DefaultCellStyle.Format = "N2"
-        saldoattuale.Columns("Saldo").DefaultCellStyle.Format = "N2"
+        ' Formattazione colonne con due decimali (controllo presenza colonne per evitare eccezioni)
+        If saldoattuale.Columns.Contains("Entrate") Then saldoattuale.Columns("Entrate").DefaultCellStyle.Format = "N2"
+        If saldoattuale.Columns.Contains("Uscite") Then saldoattuale.Columns("Uscite").DefaultCellStyle.Format = "N2"
+        If saldoattuale.Columns.Contains("Saldo") Then saldoattuale.Columns("Saldo").DefaultCellStyle.Format = "N2"
 
-        Console.WriteLine("[DEBUG] DataTable assegnato a saldoattuale. Righe: " & dt.Rows.Count)
+        Console.WriteLine("[DEBUG] DataTable assegnato a saldoattuale. Righe: " & dt.Rows.Count & "; BankFilter: " & If(String.IsNullOrWhiteSpace(bankFilter), "(tutti)", bankFilter))
     End Sub
 
     Private Sub DisegnaGraficoSaldoLinee(dt As DataTable, chartControl As Chart)
@@ -1728,11 +1770,15 @@ Public Class Form1
             End If
 
             LoadData("", bankFilter)
-            UpdateLabels() ' UpdateLabels usa GetTotalSaldoForDateRange senza bank param: se vuoi che rispetti il filtro modifica UpdateLabels per passare bankFilter
-            ' Aggiorna etichette correttamente rispettando filtro:
+
+            ' Aggiorna etichette rispettando il filtro del conto bancario
             Dim startOfYear As Date = New Date(Date.Today.Year, 1, 1)
             lblSaldo.Text = $"Saldo dal primo gennaio: {GetTotalSaldoForDateRange(startOfYear, Date.Today, "", bankFilter):F2}"
             lblPatrimonio.Text = $"Patrimonio totale: {GetTotalPatrimonio():F2}"
+
+            ' Aggiorna la tabella saldoattuale filtrata
+            AggiornaSaldoAnnoCorrente(bankFilter)
+
         Catch ex As Exception
             Console.WriteLine("Errore filtro conto bancario: " & ex.ToString())
         End Try
