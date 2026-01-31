@@ -16,6 +16,7 @@ Public Class FormAccounts
     Private btnSave As Button
     Private btnDelete As Button
     Private btnClose As Button
+    Private btnPickColor As Button
 
     Public Sub New()
         Console.WriteLine("[FormAccounts] Costruttore: inizializzazione form.")
@@ -93,6 +94,13 @@ Public Class FormAccounts
         }
         AddHandler btnClose.Click, AddressOf BtnClose_Click
         Me.Controls.Add(btnClose)
+        btnPickColor = New Button() With {
+            .Text = "Colore",
+            .Location = New Point(480, 305),
+            .Size = New Size(70, 30)
+        }
+        AddHandler btnPickColor.Click, AddressOf BtnPickColor_Click
+        Me.Controls.Add(btnPickColor)
 
         Console.WriteLine("[FormAccounts] InitializeComponents: caricamento conti bancari.")
         LoadBankAccounts()
@@ -115,7 +123,7 @@ Public Class FormAccounts
             Using conn As New SqliteConnection(connString)
                 conn.Open()
                 Console.WriteLine("[FormAccounts] LoadBankAccounts: connessione aperta.")
-                Using cmd As New SqliteCommand("SELECT Name, COALESCE(InitialBalance,0) AS InitialBalance FROM BankAccounts ORDER BY Name ASC", conn)
+                Using cmd As New SqliteCommand("SELECT Name, COALESCE(InitialBalance,0) AS InitialBalance, COALESCE(Color,'') AS Color FROM BankAccounts ORDER BY Name ASC", conn)
                     Using reader As SqliteDataReader = cmd.ExecuteReader()
                         dt.Load(reader)
                     End Using
@@ -135,6 +143,27 @@ Public Class FormAccounts
             If dgvBank.Columns.Contains("InitialBalance") Then
                 dgvBank.Columns("InitialBalance").HeaderText = "Saldo iniziale"
                 Console.WriteLine("[FormAccounts] LoadBankAccounts: colonna 'InitialBalance' trovata.")
+            End If
+            If dgvBank.Columns.Contains("Color") Then
+                dgvBank.Columns("Color").HeaderText = "Colore"
+                Console.WriteLine("[FormAccounts] LoadBankAccounts: colonna 'Color' trovata.")
+                dgvBank.Columns("Color").ReadOnly = True
+                ' Visualizza il colore come sfondo cella
+                For Each row As DataGridViewRow In dgvBank.Rows
+                    Try
+                        Dim colStr As String = Convert.ToString(row.Cells("Color").Value)
+                        If Not String.IsNullOrWhiteSpace(colStr) Then
+                            Dim c As System.Drawing.Color = System.Drawing.ColorTranslator.FromHtml(colStr)
+                            row.Cells("Color").Style.BackColor = c
+                            row.Cells("Color").Style.ForeColor = If(GetBrightness(c) > 128, System.Drawing.Color.Black, System.Drawing.Color.White)
+                        Else
+                            row.Cells("Color").Style.BackColor = System.Drawing.Color.White
+                            row.Cells("Color").Style.ForeColor = System.Drawing.Color.Black
+                        End If
+                    Catch
+                        ' ignore parsing
+                    End Try
+                Next
             End If
         Catch ex As Exception
             Console.WriteLine("[FormAccounts] Errore LoadBankAccounts: " & ex.ToString())
@@ -312,4 +341,50 @@ Public Class FormAccounts
 
         Me.Close()
     End Sub
+
+    Private Sub BtnPickColor_Click(sender As Object, e As EventArgs)
+        If dgvBank.SelectedRows.Count = 0 Then
+            MessageBox.Show("Seleziona il conto a cui assegnare un colore.", "Attenzione", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End If
+
+        Dim bankName As String = Convert.ToString(dgvBank.SelectedRows(0).Cells("Name").Value)
+        If String.IsNullOrWhiteSpace(bankName) Then
+            MessageBox.Show("Nome conto non valido.", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Return
+        End If
+
+        Using cd As New ColorDialog()
+            cd.AllowFullOpen = True
+            cd.AnyColor = True
+            If cd.ShowDialog() = DialogResult.OK Then
+                Dim c As System.Drawing.Color = cd.Color
+                Dim colorHex As String = $"#{c.R:X2}{c.G:X2}{c.B:X2}"
+
+                ' salva nel DB
+                Try
+                    Dim db As String = GetDatabasePath()
+                    Dim connString As String = "Data Source=" & db
+                    Using conn As New SqliteConnection(connString)
+                        conn.Open()
+                        Using cmd As New SqliteCommand("UPDATE BankAccounts SET Color = @color WHERE Name = @name", conn)
+                            cmd.Parameters.AddWithValue("@color", colorHex)
+                            cmd.Parameters.AddWithValue("@name", bankName)
+                            cmd.ExecuteNonQuery()
+                        End Using
+                    End Using
+                    ' ricarica la lista per applicare il colore in UI
+                    LoadBankAccounts()
+                Catch ex As Exception
+                    Console.WriteLine("[FormAccounts] Errore BtnPickColor_Click: " & ex.ToString())
+                    MessageBox.Show("Errore salvataggio colore: " & ex.Message, "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                End Try
+            End If
+        End Using
+    End Sub
+
+    ' piccolo helper per valutare brightness (usato per testo sullo sfondo colore)
+    Private Function GetBrightness(c As System.Drawing.Color) As Double
+        Return (c.R * 299 + c.G * 587 + c.B * 114) / 1000
+    End Function
 End Class

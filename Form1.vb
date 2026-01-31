@@ -17,6 +17,8 @@ Imports Microsoft.Data.Sqlite
 Public Class Form1
     Private txtPassword As New TextBox()
     '\Private cmbMonthFilter As ComboBox
+    ' --- Inserire queste dichiarazioni private nella classe Form1 (top della classe) ---
+    Private bankColorMap As New Dictionary(Of String, System.Drawing.Color)
 
 
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
@@ -792,19 +794,19 @@ Public Class Form1
             If cb Is Nothing Then Return
 
             Dim selectedName As String = ""
-            If cb.SelectedItem IsNot Nothing Then
-                ' quando il combobox è bound a DataTable gli elementi sono DataRowView
-                Dim drv = TryCast(cb.SelectedItem, DataRowView)
-                If drv IsNot Nothing Then
-                    selectedName = drv("Name").ToString()
-                Else
-                    selectedName = cb.Text
+                If cb.SelectedItem IsNot Nothing Then
+                    ' quando il combobox è bound a DataTable gli elementi sono DataRowView
+                    Dim drv = TryCast(cb.SelectedItem, DataRowView)
+                    If drv IsNot Nothing Then
+                        selectedName = drv("Name").ToString()
+                    Else
+                        selectedName = cb.Text
+                    End If
                 End If
-            End If
 
-            If Not String.IsNullOrWhiteSpace(selectedName) Then
-                SaveLastBank(lastBankFile, selectedName)
-            End If
+                If Not String.IsNullOrWhiteSpace(selectedName) Then
+                    SaveLastBank(lastBankFile, selectedName)
+                End If
         Catch ex As Exception
             Console.WriteLine("[DEBUG] Errore cmbBankAccount_SelectedIndexChanged: " & ex.ToString())
         End Try
@@ -854,15 +856,41 @@ Public Class Form1
 
         ' BankAccounts (conti bancari) -> popola cmbBankAccount e cmbAccountFilter
         Try
+            ' assicurati che la colonna Color esista (migrazione minima)
+            EnsureBankAccountsColorColumn()
+
             Using connBank As New SqliteConnection(connString)
                 connBank.Open()
-                Using cmd As New SqliteCommand("SELECT Name, InitialBalance FROM BankAccounts ORDER BY Name ASC", connBank)
+                Using cmd As New SqliteCommand("SELECT Name, InitialBalance, COALESCE(Color,'') AS Color FROM BankAccounts ORDER BY Name ASC", connBank)
                     Using reader As SqliteDataReader = cmd.ExecuteReader()
                         Dim dtBank As New DataTable
                         dtBank.Load(reader)
+
                         ' cmbBankAccount per inserimento movimento
                         cmbBankAccount.DataSource = dtBank.Copy()
                         cmbBankAccount.DisplayMember = "Name"
+
+                        ' popola la mappa colori
+                        bankColorMap.Clear()
+                        For Each r As DataRow In dtBank.Rows
+                            Dim nm As String = r("Name").ToString()
+                            Dim colorStr As String = If(r.Table.Columns.Contains("Color"), r("Color").ToString(), "")
+                            If Not String.IsNullOrWhiteSpace(colorStr) Then
+                                Try
+                                    Dim c As System.Drawing.Color = System.Drawing.ColorTranslator.FromHtml(colorStr)
+                                    bankColorMap(nm) = c
+                                Catch
+                                    ' fallback: proviamo FromName
+                                    Try
+                                        bankColorMap(nm) = System.Drawing.Color.FromName(colorStr)
+                                    Catch
+                                        bankColorMap(nm) = System.Drawing.Color.Empty
+                                    End Try
+                                End Try
+                            Else
+                                bankColorMap(nm) = System.Drawing.Color.Empty
+                            End If
+                        Next
 
                         ' Aggiungo handler per salvare la selezione su file (gestione rimozione/riaggiunta per evitare doppie iscrizioni)
                         Try
@@ -910,6 +938,7 @@ Public Class Form1
         Catch ex As Exception
             Console.WriteLine("Errore caricamento BankAccounts: " & ex.Message)
         End Try
+
 
         Console.WriteLine("Caricamento ComboBox completato.")
     End Sub
@@ -1620,7 +1649,7 @@ Public Class Form1
         dt.Columns.Add("Mese", GetType(String))
         dt.Columns.Add("Entrate", GetType(Double))
         dt.Columns.Add("Uscite", GetType(Double))
-        dt.Columns.Add("Saldo", GetType(Double))
+        dt.Columns.Add("Saldo", GetType(Double)) ' qui 'Saldo' rappresenta la DIFFERENZA (Entrate - Uscite)
 
         Dim databasePath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione", "amministrazione.db")
         Dim connString As String = "Data Source=" & databasePath
@@ -1634,30 +1663,10 @@ Public Class Form1
                 Dim dataInizio As New DateTime(annoCorrente, 1, 1)
                 Dim dataFine As DateTime = DateTime.Now
 
-                ' calcolo saldo iniziale (InitialBalance + delta prima dell'inizio dell'anno) se è selezionato un conto bancario
-                Dim startingBalance As Double = 0
-                If Not String.IsNullOrWhiteSpace(bankFilter) Then
-                    Using cmdInit As New Microsoft.Data.Sqlite.SqliteCommand("SELECT COALESCE(InitialBalance,0) FROM BankAccounts WHERE Name = @bank", conn)
-                        cmdInit.Parameters.AddWithValue("@bank", bankFilter)
-                        Dim v = cmdInit.ExecuteScalar()
-                        Dim initBal As Double = 0
-                        If v IsNot Nothing AndAlso Double.TryParse(v.ToString(), initBal) Then initBal = initBal
-                        ' delta prima dell'anno
-                        Using cmdBefore As New Microsoft.Data.Sqlite.SqliteCommand("SELECT COALESCE(SUM(Acredito),0) - COALESCE(SUM(Adebito),0) FROM Movimenti WHERE BankAccount = @bank AND Data < @start", conn)
-                            cmdBefore.Parameters.AddWithValue("@bank", bankFilter)
-                            cmdBefore.Parameters.AddWithValue("@start", dataInizio.ToString("yyyy-MM-dd"))
-                            Dim vb = cmdBefore.ExecuteScalar()
-                            Dim deltaBefore As Double = 0
-                            If vb IsNot Nothing AndAlso Double.TryParse(vb.ToString(), deltaBefore) Then deltaBefore = deltaBefore
-                            startingBalance = initBal + deltaBefore
-                        End Using
-                    End Using
-                End If
-
                 Dim query As String = "
 SELECT strftime('%Y-%m', Data) AS Mese,
-       SUM(Acredito) AS TotEntrate,
-       SUM(Adebito) AS TotUscite
+       COALESCE(SUM(Acredito),0) AS TotEntrate,
+       COALESCE(SUM(Adebito),0) AS TotUscite
 FROM Movimenti
 WHERE Data BETWEEN @DataInizio AND @DataFine"
 
@@ -1672,55 +1681,49 @@ ORDER BY Mese ASC"
                 Using cmd As New Microsoft.Data.Sqlite.SqliteCommand(query, conn)
                     cmd.Parameters.AddWithValue("@DataInizio", dataInizio.ToString("yyyy-MM-dd"))
                     cmd.Parameters.AddWithValue("@DataFine", dataFine.ToString("yyyy-MM-dd"))
-                    If Not String.IsNullOrWhiteSpace(bankFilter) Then
-                        cmd.Parameters.AddWithValue("@bank", bankFilter)
-                    End If
+                    If Not String.IsNullOrWhiteSpace(bankFilter) Then cmd.Parameters.AddWithValue("@bank", bankFilter)
 
                     Dim temp As New DataTable()
                     Using reader As Microsoft.Data.Sqlite.SqliteDataReader = cmd.ExecuteReader()
                         temp.Load(reader)
                     End Using
 
-                    Dim saldoTotaleDelta As Double = 0
-                    For i As Integer = 0 To temp.Rows.Count - 1
-                        Dim mese As String = temp.Rows(i)("Mese").ToString()
-                        Dim entrate As Double = Math.Round(If(IsDBNull(temp.Rows(i)("TotEntrate")), 0, Convert.ToDouble(temp.Rows(i)("TotEntrate"))), 2)
-                        Dim uscite As Double = Math.Round(If(IsDBNull(temp.Rows(i)("TotUscite")), 0, Convert.ToDouble(temp.Rows(i)("TotUscite"))), 2)
-                        Dim deltaMensile As Double = Math.Round(entrate - uscite, 2)
+                    Dim sommaDifferenze As Double = 0
+                    For Each r As DataRow In temp.Rows
+                        Dim mese As String = Convert.ToString(r("Mese"))
+                        Dim entrate As Double = 0
+                        Dim uscite As Double = 0
 
-                        Dim saldoMensileForRow As Double
-                        If i = 0 AndAlso Not String.IsNullOrWhiteSpace(bankFilter) Then
-                            ' al primo mese aggiungiamo lo startingBalance così la serie cumulativa parte dal saldo reale
-                            saldoMensileForRow = startingBalance + deltaMensile
-                        Else
-                            saldoMensileForRow = deltaMensile
-                        End If
+                        Double.TryParse(Convert.ToString(r("TotEntrate")), entrate)
+                        Double.TryParse(Convert.ToString(r("TotUscite")), uscite)
 
-                        saldoTotaleDelta += deltaMensile
+                        ' DIFFERENZA mensile: Entrate - Uscite
+                        Dim differenza As Double = Math.Round(entrate - uscite, 2)
 
                         Dim row As DataRow = dt.NewRow()
                         row("Mese") = mese
-                        row("Entrate") = entrate
-                        row("Uscite") = uscite
-                        row("Saldo") = Math.Round(saldoMensileForRow, 2)
+                        row("Entrate") = Math.Round(entrate, 2)
+                        row("Uscite") = Math.Round(uscite, 2)
+                        row("Saldo") = differenza
                         dt.Rows.Add(row)
 
-                        Console.WriteLine($"[DEBUG] {mese} → Entrate: {entrate}, Uscite: {uscite}, DeltaMensile: {deltaMensile}, SaldoRow: {saldoMensileForRow}")
+                        sommaDifferenze += differenza
+                        Console.WriteLine($"[DEBUG] {mese} → Entrate: {entrate}, Uscite: {uscite}, Differenza: {differenza}")
                     Next
 
-                    ' Riga finale con saldo totale (se filtro bancario: startingBalance + somma delta; altrimenti somma delta)
+                    ' Riga finale: totali (somma Entrate, somma Uscite, differenza totale)
+                    Dim totaleEntrate As Double = If(dt.Rows.Count > 0, Math.Round(dt.AsEnumerable().Sum(Function(x) x.Field(Of Double)("Entrate")), 2), 0)
+                    Dim totaleUscite As Double = If(dt.Rows.Count > 0, Math.Round(dt.AsEnumerable().Sum(Function(x) x.Field(Of Double)("Uscite")), 2), 0)
+                    Dim differenzaTotale As Double = Math.Round(totaleEntrate - totaleUscite, 2)
+
                     Dim rowTotale As DataRow = dt.NewRow()
                     rowTotale("Mese") = "Totale anno solare " & annoCorrente & " fino a " & dataFine.ToString("dd/MM/yyyy")
-                    rowTotale("Entrate") = If(dt.Rows.Count > 0, Math.Round(dt.AsEnumerable().Sum(Function(r) r.Field(Of Double)("Entrate")), 2), 0)
-                    rowTotale("Uscite") = If(dt.Rows.Count > 0, Math.Round(dt.AsEnumerable().Sum(Function(r) r.Field(Of Double)("Uscite")), 2), 0)
-                    If Not String.IsNullOrWhiteSpace(bankFilter) Then
-                        rowTotale("Saldo") = Math.Round(startingBalance + saldoTotaleDelta, 2)
-                    Else
-                        rowTotale("Saldo") = Math.Round(saldoTotaleDelta, 2)
-                    End If
+                    rowTotale("Entrate") = totaleEntrate
+                    rowTotale("Uscite") = totaleUscite
+                    rowTotale("Saldo") = differenzaTotale
                     dt.Rows.Add(rowTotale)
 
-                    Console.WriteLine("[DEBUG] Saldo totale anno solare " & annoCorrente & ": " & If(String.IsNullOrWhiteSpace(bankFilter), saldoTotaleDelta, startingBalance + saldoTotaleDelta))
+                    Console.WriteLine("[DEBUG] Totale Entrate: " & totaleEntrate & " | Totale Uscite: " & totaleUscite & " | Differenza: " & differenzaTotale)
                 End Using
             End Using
         Catch ex As Exception
@@ -1730,8 +1733,6 @@ ORDER BY Mese ASC"
 
         Return dt
     End Function
-
-
     Private Sub AggiornaSaldoAnnoCorrente(Optional bankFilter As String = "")
         Dim dt As DataTable = CaricaAndamentoAnnoCorrente(bankFilter)
         saldoattuale.DataSource = dt
@@ -1856,7 +1857,15 @@ ORDER BY Mese ASC"
             ' Aggiorna etichette rispettando il filtro del conto bancario
             Dim startOfYear As Date = New Date(Date.Today.Year, 1, 1)
             lblSaldo.Text = $"Saldo dal primo gennaio: {GetTotalSaldoForDateRange(startOfYear, Date.Today, "", bankFilter):F2}"
-            lblPatrimonio.Text = $"Patrimonio totale: {GetTotalPatrimonio():F2}"
+
+            If String.IsNullOrWhiteSpace(bankFilter) Then
+                ' comportamento precedente: patrimonio totale
+                lblPatrimonio.Text = $"Patrimonio totale: {GetTotalPatrimonio():F2}"
+            Else
+                ' mostra la sommatoria solo per il conto selezionato
+                Dim pat As Double = GetPatrimonioPerBank(bankFilter)
+                lblPatrimonio.Text = $"Patrimonio {bankFilter}: {pat:F2}"
+            End If
 
             ' Aggiorna la tabella saldoattuale filtrata
             AggiornaSaldoAnnoCorrente(bankFilter)
@@ -1865,7 +1874,6 @@ ORDER BY Mese ASC"
             Console.WriteLine("Errore filtro conto bancario: " & ex.ToString())
         End Try
     End Sub
-
     Private Sub InitializeMonthFilterCombo()
         Try
             ' Se il controllo è già stato aggiunto nel Designer, usalo (così puoi posizionarlo manualmente)
@@ -2099,5 +2107,108 @@ ORDER BY Mese ASC"
 
         Return result
     End Function
+    Private Function GetPatrimonioPerBank(bankName As String) As Double
+        If String.IsNullOrWhiteSpace(bankName) Then
+            Return GetTotalPatrimonio()
+        End If
+
+        Dim total As Double = 0
+        Dim databaseFolder As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione")
+        Dim databasePath As String = Path.Combine(databaseFolder, "amministrazione.db")
+        Dim connString As String = "Data Source=" & databasePath
+
+        Try
+            Using conn As New SqliteConnection(connString)
+                conn.Open()
+
+                ' InitialBalance del conto
+                Using cmdInit As New SqliteCommand("SELECT COALESCE(InitialBalance,0) FROM BankAccounts WHERE Name = @bank", conn)
+                    cmdInit.Parameters.AddWithValue("@bank", bankName)
+                    Dim v = cmdInit.ExecuteScalar()
+                    Dim initBal As Double = 0
+                    If v IsNot Nothing AndAlso Double.TryParse(v.ToString(), initBal) Then
+                        total += initBal
+                    End If
+                End Using
+
+                ' Movimenti associati al conto (Acredito - Adebito)
+                Using cmdMov As New SqliteCommand("SELECT COALESCE(SUM(Acredito),0) - COALESCE(SUM(Adebito),0) FROM Movimenti WHERE BankAccount = @bank", conn)
+                    cmdMov.Parameters.AddWithValue("@bank", bankName)
+                    Dim v2 = cmdMov.ExecuteScalar()
+                    Dim movSum As Double = 0
+                    If v2 IsNot Nothing AndAlso Double.TryParse(v2.ToString(), movSum) Then
+                        total += movSum
+                    End If
+                End Using
+            End Using
+        Catch ex As Exception
+            Console.WriteLine("[DEBUG] Errore GetPatrimonioPerBank: " & ex.ToString())
+        End Try
+
+        Return total
+    End Function
+
+    ' --- Nuova funzione: assicura che la colonna Color esista in BankAccounts ---
+    Private Sub EnsureBankAccountsColorColumn()
+        Try
+            Dim databaseFolder As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione")
+            Dim databasePath As String = Path.Combine(databaseFolder, "amministrazione.db")
+            Dim connString As String = "Data Source=" & databasePath
+
+            Using conn As New SqliteConnection(connString)
+                conn.Open()
+                Using pragmaCmd As New SqliteCommand("PRAGMA table_info(BankAccounts);", conn)
+                    Using reader As SqliteDataReader = pragmaCmd.ExecuteReader()
+                        Dim hasColor As Boolean = False
+                        While reader.Read()
+                            If String.Equals(reader("name").ToString(), "Color", StringComparison.OrdinalIgnoreCase) Then
+                                hasColor = True
+                                Exit While
+                            End If
+                        End While
+
+                        If Not hasColor Then
+                            Using alterCmd As New SqliteCommand("ALTER TABLE BankAccounts ADD COLUMN Color TEXT DEFAULT '';", conn)
+                                alterCmd.ExecuteNonQuery()
+                                Console.WriteLine("[DB] Colonna 'Color' aggiunta a 'BankAccounts'.")
+                            End Using
+                        End If
+                    End Using
+                End Using
+            End Using
+        Catch ex As Exception
+            Console.WriteLine("[DB] Errore EnsureBankAccountsColorColumn: " & ex.ToString())
+        End Try
+    End Sub
+
+    ' --- Nuovo handler: formatta la cella BankAccount con il colore associato ---
+    Private Sub DataGridView1_CellFormatting(sender As Object, e As DataGridViewCellFormattingEventArgs) Handles DataGridView1.CellFormatting
+        Try
+            If DataGridView1.Columns(e.ColumnIndex).Name = "BankAccount" AndAlso e.Value IsNot Nothing Then
+                Dim bankName As String = e.Value.ToString()
+                If bankColorMap.ContainsKey(bankName) Then
+                    Dim c As System.Drawing.Color = bankColorMap(bankName)
+                    If Not c.IsEmpty Then
+                        e.CellStyle.BackColor = c
+                        e.CellStyle.ForeColor = GetContrastingColor(c)
+                    End If
+                End If
+            End If
+        Catch ex As Exception
+            Console.WriteLine("[DEBUG] DataGridView1_CellFormatting: " & ex.ToString())
+        End Try
+    End Sub
+
+    ' --- Helper per colore di contrasto (testo) ---
+    Private Function GetContrastingColor(bg As System.Drawing.Color) As System.Drawing.Color
+        Dim brightness As Double = (bg.R * 299 + bg.G * 587 + bg.B * 114) / 1000
+        If brightness > 128 Then
+            Return System.Drawing.Color.Black
+        Else
+            Return System.Drawing.Color.White
+        End If
+    End Function
+
+
 End Class
 
