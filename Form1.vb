@@ -16,6 +16,9 @@ Imports Microsoft.Data.Sqlite
 
 Public Class Form1
     Private txtPassword As New TextBox()
+    'Private cmbMonthFilter As ComboBox
+
+
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         Try
             ' Me.Size = New Size(Screen.PrimaryScreen.WorkingArea.Width, Screen.PrimaryScreen.WorkingArea.Height)
@@ -43,6 +46,14 @@ Public Class Form1
             ' Carica dati iniziali
             LoadData()
             LoadDataIntoComboboxes()
+
+            ' Inizializza filtro mese e popolalo
+            InitializeMonthFilterCombo()
+            PopulateMonths()
+            ' Associa evento per aggiornare il grafico quando cambia filtro banca
+            AddHandler cmbAccountFilter.SelectedIndexChanged, AddressOf Filters_Changed
+            AddHandler cmbMonthFilter.SelectedIndexChanged, AddressOf Filters_Changed
+
             HighlightDatesWithDocuments()
             MonthCalendar1.UpdateBoldedDates()
 
@@ -71,6 +82,8 @@ Public Class Form1
             editColumn.Text = "Modifica"
             editColumn.UseColumnTextForButtonValue = True
             DataGridView1.Columns.Add(editColumn)
+
+
 
             ' Aggiungi "Adebito", "Acredito" e "Saldo" a cmbContoType
             cmbContoType.Items.Add("Adebito")
@@ -538,18 +551,13 @@ Public Class Form1
 
         If Not Directory.Exists(databaseFolder) Then
             Console.WriteLine("Cartella non trovata. Creazione in corso...")
-            MessageBox.Show("La cartella 'Amministrazione' non esiste. Verrà creata.")
             Directory.CreateDirectory(databaseFolder)
-            Console.WriteLine("Cartella creata.")
         Else
             Console.WriteLine("Cartella già esistente.")
         End If
 
-        Console.WriteLine("Verifica file database: " & databasePath)
-
         If Not File.Exists(databasePath) Then
             Console.WriteLine("File database non trovato. Creazione in corso...")
-            MessageBox.Show("Il file del database non esiste. Verrà creato.")
             Using conn As New SqliteConnection("Data Source=" & databasePath)
                 conn.Open()
             End Using
@@ -558,51 +566,80 @@ Public Class Form1
             Console.WriteLine("File database già esistente.")
         End If
 
-        Console.WriteLine("Avvio creazione tabelle...")
-
         Using conn As New SqliteConnection(connString)
             conn.Open()
 
-            Using cmd As New SqliteCommand("CREATE TABLE IF NOT EXISTS Movimenti (ID INTEGER PRIMARY KEY AUTOINCREMENT, Data TEXT, Conto TEXT, Descrizione TEXT, Adebito REAL, Acredito REAL, Nota TEXT)", conn)
+            ' Movimenti: aggiungo la colonna BankAccount con default HelloBank per retrocompatibilità
+            Using cmd As New SqliteCommand("CREATE TABLE IF NOT EXISTS Movimenti (ID INTEGER PRIMARY KEY AUTOINCREMENT, Data TEXT, Conto TEXT, Descrizione TEXT, Adebito REAL, Acredito REAL, Nota TEXT, BankAccount TEXT DEFAULT 'HelloBank')", conn)
                 cmd.ExecuteNonQuery()
-                Console.WriteLine("Tabella 'Movimenti' verificata/creata.")
+                Console.WriteLine("Tabella 'Movimenti' verificata/creata (con BankAccount).")
             End Using
 
+            ' Descrizioni (categorie)
             Using cmd As New SqliteCommand("CREATE TABLE IF NOT EXISTS Descrizioni (ID INTEGER PRIMARY KEY AUTOINCREMENT, Descrizione TEXT UNIQUE)", conn)
                 cmd.ExecuteNonQuery()
                 Console.WriteLine("Tabella 'Descrizioni' verificata/creata.")
             End Using
 
+            ' Conti (categorie già esistenti nel tuo DB)
             Using cmd As New SqliteCommand("CREATE TABLE IF NOT EXISTS Conti (ID INTEGER PRIMARY KEY AUTOINCREMENT, Conto TEXT UNIQUE)", conn)
                 cmd.ExecuteNonQuery()
                 Console.WriteLine("Tabella 'Conti' verificata/creata.")
             End Using
+
+            ' BankAccounts: nuovi conti bancari con InitialBalance
+            Using cmd As New SqliteCommand("CREATE TABLE IF NOT EXISTS BankAccounts (ID INTEGER PRIMARY KEY AUTOINCREMENT, Name TEXT UNIQUE, InitialBalance REAL DEFAULT 0)", conn)
+                cmd.ExecuteNonQuery()
+                Console.WriteLine("Tabella 'BankAccounts' verificata/creata.")
+            End Using
+
+            ' Migrazione: se Movimenti esisteva senza BankAccount, aggiungila (PRAGMA table_info)
+            Try
+                Using pragmaCmd As New SqliteCommand("PRAGMA table_info(Movimenti);", conn)
+                    Using reader As SqliteDataReader = pragmaCmd.ExecuteReader()
+                        Dim hasBankAccount As Boolean = False
+                        While reader.Read()
+                            Dim colName As String = reader("name").ToString()
+                            If String.Equals(colName, "BankAccount", StringComparison.OrdinalIgnoreCase) Then
+                                hasBankAccount = True
+                                Exit While
+                            End If
+                        End While
+
+                        If Not hasBankAccount Then
+                            Using alterCmd As New SqliteCommand("ALTER TABLE Movimenti ADD COLUMN BankAccount TEXT DEFAULT 'HelloBank';", conn)
+                                alterCmd.ExecuteNonQuery()
+                                Console.WriteLine("Colonna 'BankAccount' aggiunta a 'Movimenti'.")
+                            End Using
+                        End If
+                    End Using
+                End Using
+            Catch ex As Exception
+                Console.WriteLine("Impossibile verificare/aggiungere BankAccount: " & ex.ToString())
+            End Try
         End Using
 
         Console.WriteLine("Creazione database completata.")
     End Sub
 
     Private Sub btnSave_Click(sender As Object, e As EventArgs) Handles btnSave.Click
-        Dim databasePath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione", "amministrazione.db")
-        Dim connString As String = "Data Source=" & databasePath
-
-        Console.WriteLine("Avvio salvataggio dati. Database: " & databasePath)
+        Dim databasePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione", "amministrazione.db")
+        Dim connString = "Data Source=" & databasePath
 
         Try
             Using conn As New SqliteConnection(connString)
                 conn.Open()
-                Console.WriteLine("Connessione al database aperta.")
 
-                ' Inserimento in Movimenti
-                Dim insertMovimentiQuery As String = "
-            INSERT INTO Movimenti (Data, Conto, Descrizione, Adebito, Acredito, Nota)
-            VALUES (@data, @conto, @descrizione, @addebito, @acredito, @nota)"
+                Dim insertMovimentiQuery = "
+        INSERT INTO Movimenti (Data, Conto, Descrizione, Adebito, Acredito, Nota, BankAccount)
+        VALUES (@data, @conto, @descrizione, @addebito, @acredito, @nota, @bankaccount)"
 
                 Using cmd As New SqliteCommand(insertMovimentiQuery, conn)
                     Dim dataStr = MonthCalendar1.SelectionStart.ToString("yyyy-MM-dd")
                     Dim conto = cmbConto.Text
                     Dim descrizione = cmbDescrizione.Text
                     Dim nota = RichTextBoxNota.Text
+                    Dim bankAccount = If(cmbBankAccount IsNot Nothing AndAlso Not String.IsNullOrWhiteSpace(cmbBankAccount.Text), cmbBankAccount.Text, "HelloBank")
 
                     Dim adebitoText = txtAdebito.Text.Replace(".", ",")
                     Dim acreditText = txtAcredito.Text.Replace(".", ",")
@@ -619,62 +656,39 @@ Public Class Form1
                     cmd.Parameters.AddWithValue("@addebito", adebitoValue)
                     cmd.Parameters.AddWithValue("@acredito", acreditValue)
                     cmd.Parameters.AddWithValue("@nota", nota)
-
-                    Console.WriteLine("Eseguo INSERT Movimenti con:")
-                    Console.WriteLine($"  Data: {dataStr}")
-                    Console.WriteLine($"  Conto: {conto}")
-                    Console.WriteLine($"  Descrizione: {descrizione}")
-                    Console.WriteLine($"  Adebito: {adebitoValue}")
-                    Console.WriteLine($"  Acredito: {acreditValue}")
-                    Console.WriteLine($"  Nota: {nota}")
+                    cmd.Parameters.AddWithValue("@bankaccount", bankAccount)
 
                     cmd.ExecuteNonQuery()
-                    Console.WriteLine("Inserimento in Movimenti completato.")
                 End Using
 
                 ' Inserimento descrizione unica
-                Dim insertDescrizioneQuery As String = "INSERT OR IGNORE INTO Descrizioni (Descrizione) VALUES (@descrizione)"
-                Using cmd As New SqliteCommand(insertDescrizioneQuery, conn)
+                Using cmd As New SqliteCommand("INSERT OR IGNORE INTO Descrizioni (Descrizione) VALUES (@descrizione)", conn)
                     cmd.Parameters.AddWithValue("@descrizione", cmbDescrizione.Text)
-                    Console.WriteLine("Verifica/Inserimento descrizione: " & cmbDescrizione.Text)
                     cmd.ExecuteNonQuery()
                 End Using
 
-                ' Inserimento conto unico
-                Dim insertContoQuery As String = "INSERT OR IGNORE INTO Conti (Conto) VALUES (@conto)"
-                Using cmd As New SqliteCommand(insertContoQuery, conn)
+                ' Inserimento conto categoria se manca
+                Using cmd As New SqliteCommand("INSERT OR IGNORE INTO Conti (Conto) VALUES (@conto)", conn)
                     cmd.Parameters.AddWithValue("@conto", cmbConto.Text)
-                    Console.WriteLine("Verifica/Inserimento conto: " & cmbConto.Text)
+                    cmd.ExecuteNonQuery()
+                End Using
+
+                ' Inserimento BankAccount se manca (mantieni InitialBalance se vuoi impostarlo nel form BankAccounts)
+                Using cmd As New SqliteCommand("INSERT OR IGNORE INTO BankAccounts (Name) VALUES (@bank)", conn)
+                    cmd.Parameters.AddWithValue("@bank", If(cmbBankAccount IsNot Nothing, cmbBankAccount.Text, "HelloBank"))
                     cmd.ExecuteNonQuery()
                 End Using
             End Using
 
             MessageBox.Show("Dati salvati con successo!")
-            Console.WriteLine("Salvataggio completato. Aggiorno interfaccia...")
-
             LoadData()
-            Console.WriteLine("Griglia dati aggiornata.")
-
             UpdateLabels()
-            Console.WriteLine("Etichette aggiornate.")
-
             LoadDataIntoComboboxes()
-            Console.WriteLine("Combobox aggiornati.")
-
             HighlightDatesWithDocuments()
-            Console.WriteLine("Date evidenziate nel calendario.")
-
-
-            Console.WriteLine("Grafico spese mese corrente aggiornato.")
-
             MonthCalendar1.UpdateBoldedDates()
-            Console.WriteLine("Date evidenziate aggiornate nel calendario.")
-
             AggiornaSaldoAnnoCorrente()
-            Console.WriteLine("Saldo anno corrente aggiornato")
-            Dim dt As DataTable = CaricaAndamentoAnnoCorrente()
-            DisegnaGraficoSaldoLinee(dt, Chart1)   ' chart1 è il controllo Chart sul form
-            Console.WriteLine("Grafico andamento anno corrente aggiornato.")
+            Dim dt = CaricaAndamentoAnnoCorrente()
+            DisegnaGraficoSaldoLinee(dt, Chart1)
 
             ' Reset campi
             txtAcredito.Text = ""
@@ -682,77 +696,64 @@ Public Class Form1
             cmbConto.Text = ""
             cmbDescrizione.Text = ""
             RichTextBoxNota.Text = ""
-            Console.WriteLine("Campi input ripuliti.")
         Catch ex As Exception
             MessageBox.Show("Errore durante il salvataggio: " & ex.Message, "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
-            Console.WriteLine("Errore btnSave_Click: " & ex.ToString())
+            Console.WriteLine("Errore btnSave_Click: " & ex.ToString)
         End Try
     End Sub
 
-    Private Sub LoadData()
+    Private Sub LoadData(Optional contoFilter As String = "", Optional bankFilter As String = "")
         Dim databasePath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione", "amministrazione.db")
         Dim connString As String = "Data Source=" & databasePath
 
-        Console.WriteLine("Avvio caricamento dati. Verifica database: " & databasePath)
+        Dim dt As New DataTable()
+        dt.Columns.Add("Id", GetType(Integer))
+        dt.Columns.Add("Data", GetType(String))
+        dt.Columns.Add("Conto", GetType(String))
+        dt.Columns.Add("Descrizione", GetType(String))
+        dt.Columns.Add("Adebito", GetType(Double))
+        dt.Columns.Add("Acredito", GetType(Double))
+        dt.Columns.Add("Nota", GetType(String))
+        dt.Columns.Add("BankAccount", GetType(String))
 
-        If File.Exists(databasePath) Then
-            Console.WriteLine("Database trovato. Preparazione struttura tabella...")
+        Using conn As New SqliteConnection(connString)
+            conn.Open()
+            Dim sql As String = "SELECT * FROM Movimenti"
+            Dim whereParts As New List(Of String)
+            If Not String.IsNullOrWhiteSpace(contoFilter) Then whereParts.Add("Conto = @conto")
+            If Not String.IsNullOrWhiteSpace(bankFilter) Then whereParts.Add("BankAccount = @bank")
+            If whereParts.Count > 0 Then sql &= " WHERE " & String.Join(" AND ", whereParts)
+            sql &= " ORDER BY Data DESC"
 
-            Dim dt As New DataTable()
-            dt.Columns.Add("Id", GetType(Integer))
-            dt.Columns.Add("Data", GetType(String))
-            dt.Columns.Add("Conto", GetType(String))
-            dt.Columns.Add("Descrizione", GetType(String))
-            dt.Columns.Add("Adebito", GetType(Double))
-            dt.Columns.Add("Acredito", GetType(Double))
-            dt.Columns.Add("Nota", GetType(String))
+            Using cmd As New SqliteCommand(sql, conn)
+                If Not String.IsNullOrWhiteSpace(contoFilter) Then cmd.Parameters.AddWithValue("@conto", contoFilter)
+                If Not String.IsNullOrWhiteSpace(bankFilter) Then cmd.Parameters.AddWithValue("@bank", bankFilter)
 
-            Using conn As New SqliteConnection(connString)
-                conn.Open()
-                Console.WriteLine("Connessione al database aperta.")
+                Using reader As SqliteDataReader = cmd.ExecuteReader()
+                    While reader.Read()
+                        Dim row As DataRow = dt.NewRow()
+                        row("Id") = reader("Id")
+                        row("Data") = reader("Data").ToString()
+                        row("Conto") = reader("Conto").ToString()
+                        row("Descrizione") = reader("Descrizione").ToString()
 
-                Using cmd As New SqliteCommand("SELECT * FROM Movimenti", conn)
-                    Using reader As SqliteDataReader = cmd.ExecuteReader()
-                        Dim recordCount As Integer = 0
+                        Dim adebito As Double
+                        If Double.TryParse(reader("Adebito").ToString(), adebito) Then row("Adebito") = adebito Else row("Adebito") = 0
 
-                        While reader.Read()
-                            Dim row As DataRow = dt.NewRow()
-                            row("Id") = reader("Id")
-                            row("Data") = reader("Data").ToString()
-                            row("Conto") = reader("Conto").ToString()
-                            row("Descrizione") = reader("Descrizione").ToString()
+                        Dim acred As Double
+                        If Double.TryParse(reader("Acredito").ToString(), acred) Then row("Acredito") = acred Else row("Acredito") = 0
 
-                            Dim adebito As Double
-                            If Double.TryParse(reader("Adebito").ToString(), adebito) Then
-                                row("Adebito") = adebito
-                            Else
-                                row("Adebito") = 0
-                            End If
-
-                            Dim acred As Double
-                            If Double.TryParse(reader("Acredito").ToString(), acred) Then
-                                row("Acredito") = acred
-                            Else
-                                row("Acredito") = 0
-                            End If
-
-                            row("Nota") = reader("Nota").ToString()
-                            dt.Rows.Add(row)
-                            recordCount += 1
-                        End While
-
-                        Console.WriteLine("Dati letti: " & recordCount & " record.")
-                    End Using
+                        row("Nota") = If(reader("Nota") IsNot DBNull.Value, reader("Nota").ToString(), "")
+                        row("BankAccount") = If(reader("BankAccount") IsNot DBNull.Value, reader("BankAccount").ToString(), "HelloBank")
+                        dt.Rows.Add(row)
+                    End While
                 End Using
             End Using
+        End Using
 
-            DataGridView1.DataSource = dt
-            Console.WriteLine("Griglia aggiornata con i dati.")
-        Else
-            Console.WriteLine("Database non trovato.")
-            MessageBox.Show("Il database non esiste. Assicurati di aver creato il database e le tabelle prima di caricare i dati.")
-        End If
+        DataGridView1.DataSource = dt
     End Sub
+
 
     Private Sub LoadDataIntoComboboxes()
         Dim databaseFolder As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione")
@@ -760,46 +761,72 @@ Public Class Form1
         Dim connString As String = "Data Source=" & databasePath
 
         Console.WriteLine("Avvio caricamento dati nei ComboBox.")
-        Console.WriteLine("Percorso database: " & databasePath)
 
-        ' Carica dati per ComboBox Descrizione
+        ' Descrizioni (categorie)
         Try
             Using connDesc As New SqliteConnection(connString)
                 connDesc.Open()
-                Console.WriteLine("Connessione aperta per 'Descrizioni'.")
-
                 Using cmd As New SqliteCommand("SELECT Descrizione FROM Descrizioni ORDER BY Descrizione ASC", connDesc)
                     Using reader As SqliteDataReader = cmd.ExecuteReader()
                         Dim dtDesc As New DataTable
                         dtDesc.Load(reader)
                         cmbDescrizione.DataSource = dtDesc
                         cmbDescrizione.DisplayMember = "Descrizione"
-                        Console.WriteLine("ComboBox 'Descrizione' popolato con " & dtDesc.Rows.Count & " voci.")
                     End Using
                 End Using
             End Using
         Catch ex As Exception
-            Console.WriteLine("Errore durante il caricamento di 'Descrizioni': " & ex.Message)
+            Console.WriteLine("Errore caricamento Descrizioni: " & ex.Message)
         End Try
 
-        ' Carica dati per ComboBox Conto
+        ' Conto (categorie per colonna Conto)
         Try
             Using connConto As New SqliteConnection(connString)
                 connConto.Open()
-                Console.WriteLine("Connessione aperta per 'Conti'.")
-
                 Using cmd As New SqliteCommand("SELECT Conto FROM Conti ORDER BY Conto ASC", connConto)
                     Using reader As SqliteDataReader = cmd.ExecuteReader()
                         Dim dtConto As New DataTable
                         dtConto.Load(reader)
                         cmbConto.DataSource = dtConto
                         cmbConto.DisplayMember = "Conto"
-                        Console.WriteLine("ComboBox 'Conto' popolato con " & dtConto.Rows.Count & " voci.")
                     End Using
                 End Using
             End Using
         Catch ex As Exception
-            Console.WriteLine("Errore durante il caricamento di 'Conti': " & ex.Message)
+            Console.WriteLine("Errore caricamento Conti: " & ex.Message)
+        End Try
+
+        ' BankAccounts (conti bancari) -> popola cmbBankAccount e cmbAccountFilter
+        Try
+            Using connBank As New SqliteConnection(connString)
+                connBank.Open()
+                Using cmd As New SqliteCommand("SELECT Name, InitialBalance FROM BankAccounts ORDER BY Name ASC", connBank)
+                    Using reader As SqliteDataReader = cmd.ExecuteReader()
+                        Dim dtBank As New DataTable
+                        dtBank.Load(reader)
+                        ' cmbBankAccount per inserimento movimento
+                        cmbBankAccount.DataSource = dtBank.Copy()
+                        cmbBankAccount.DisplayMember = "Name"
+
+                        ' cmbAccountFilter per filtro vista: prima voce "Tutti i conti bancari"
+                        Dim dtFilter As New DataTable()
+                        dtFilter.Columns.Add("Name", GetType(String))
+                        Dim rAll As DataRow = dtFilter.NewRow()
+                        rAll("Name") = "Tutti i conti bancari"
+                        dtFilter.Rows.Add(rAll)
+                        For Each r As DataRow In dtBank.Rows
+                            Dim nr As DataRow = dtFilter.NewRow()
+                            nr("Name") = r("Name").ToString()
+                            dtFilter.Rows.Add(nr)
+                        Next
+                        cmbAccountFilter.DataSource = dtFilter
+                        cmbAccountFilter.DisplayMember = "Name"
+                        cmbAccountFilter.SelectedIndex = 0
+                    End Using
+                End Using
+            End Using
+        Catch ex As Exception
+            Console.WriteLine("Errore caricamento BankAccounts: " & ex.Message)
         End Try
 
         Console.WriteLine("Caricamento ComboBox completato.")
@@ -845,28 +872,34 @@ Public Class Form1
             conn.Open()
             Console.WriteLine("[DEBUG] Connessione al database aperta.")
 
-            Using cmd As New SqliteCommand(connString)
+            ' Calcola delta Movimenti per il conto
+            Using cmd As New SqliteCommand("", conn)
                 If contoType = "Stipendi" Then
                     cmd.CommandText = "SELECT SUM(Acredito) FROM Movimenti WHERE Conto = @contoType AND Data BETWEEN @startDate AND @endDate"
-                    Console.WriteLine("[DEBUG] Query per 'Stipendi': " & cmd.CommandText)
                 Else
                     cmd.CommandText = "SELECT SUM(Adebito - Acredito) FROM Movimenti WHERE Conto = @contoType AND Data BETWEEN @startDate AND @endDate"
-                    Console.WriteLine("[DEBUG] Query per altri conti: " & cmd.CommandText)
                 End If
 
                 cmd.Parameters.AddWithValue("@contoType", contoType)
                 cmd.Parameters.AddWithValue("@startDate", startDate.ToString("yyyy-MM-dd"))
                 cmd.Parameters.AddWithValue("@endDate", endDate.ToString("yyyy-MM-dd"))
-                Console.WriteLine("[DEBUG] Parametri impostati.")
 
                 Dim result = cmd.ExecuteScalar()
-                Console.WriteLine("[DEBUG] Risultato query: " & If(result IsNot Nothing, result.ToString(), "NULL"))
-
                 If result IsNot Nothing AndAlso Double.TryParse(result.ToString(), total) Then
-                    Console.WriteLine("[DEBUG] Totale calcolato: " & total)
-                    Return total
+                    Console.WriteLine("[DEBUG] Totale movimenti calcolato: " & total)
                 Else
-                    Console.WriteLine("[DEBUG] Conversione fallita o risultato nullo.")
+                    total = 0
+                End If
+            End Using
+
+            ' Aggiungi il saldo iniziale del conto (se presente)
+            Using cmdInit As New SqliteCommand("SELECT COALESCE(InitialBalance,0) FROM Conti WHERE Conto = @conto", conn)
+                cmdInit.Parameters.AddWithValue("@conto", contoType)
+                Dim initResult = cmdInit.ExecuteScalar()
+                Dim initBal As Double = 0
+                If initResult IsNot Nothing AndAlso Double.TryParse(initResult.ToString(), initBal) Then
+                    total += initBal
+                    Console.WriteLine("[DEBUG] InitialBalance aggiunto: " & initBal)
                 End If
             End Using
         End Using
@@ -876,38 +909,46 @@ Public Class Form1
     End Function
 
 
-    Private Function GetTotalSaldoForDateRange(startDate As Date, endDate As Date) As Double
-        Console.WriteLine($"[DEBUG] Calcolo saldo totale dal {startDate:yyyy-MM-dd} al {endDate:yyyy-MM-dd}")
-
+    Private Function GetTotalSaldoForDateRange(startDate As Date, endDate As Date, Optional contoFilter As String = "", Optional bankFilter As String = "") As Double
         Dim total As Double = 0
         Dim databaseFolder As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione")
         Dim databasePath As String = Path.Combine(databaseFolder, "amministrazione.db")
         Dim connString As String = "Data Source=" & databasePath
-        Console.WriteLine("[DEBUG] Percorso database: " & databasePath)
 
         Using conn As New SqliteConnection(connString)
             conn.Open()
-            Console.WriteLine("[DEBUG] Connessione al database aperta.")
 
-            Dim query As String = "SELECT SUM(Acredito) - SUM(Adebito) FROM Movimenti WHERE Data >= @startDate AND Data <= @endDate"
+            Dim query As String = "SELECT COALESCE(SUM(Acredito),0) - COALESCE(SUM(Adebito),0) FROM Movimenti WHERE Data >= @startDate AND Data <= @endDate"
+            If Not String.IsNullOrWhiteSpace(contoFilter) Then query &= " AND Conto = @conto"
+            If Not String.IsNullOrWhiteSpace(bankFilter) Then query &= " AND BankAccount = @bank"
+
             Using cmd As New SqliteCommand(query, conn)
                 cmd.Parameters.AddWithValue("@startDate", startDate.ToString("yyyy-MM-dd"))
                 cmd.Parameters.AddWithValue("@endDate", endDate.ToString("yyyy-MM-dd"))
-                Console.WriteLine("[DEBUG] Parametri impostati.")
+                If Not String.IsNullOrWhiteSpace(contoFilter) Then cmd.Parameters.AddWithValue("@conto", contoFilter)
+                If Not String.IsNullOrWhiteSpace(bankFilter) Then cmd.Parameters.AddWithValue("@bank", bankFilter)
 
                 Dim result = cmd.ExecuteScalar()
-                Console.WriteLine("[DEBUG] Risultato query: " & If(result IsNot Nothing, result.ToString(), "NULL"))
-
                 If result IsNot Nothing AndAlso Double.TryParse(result.ToString(), total) Then
-                    Console.WriteLine("[DEBUG] Saldo totale calcolato: " & total)
-                    Return total
+                    ' ok
                 Else
-                    Console.WriteLine("[DEBUG] Conversione fallita o risultato nullo.")
+                    total = 0
                 End If
             End Using
+
+            ' Se è selezionato un conto bancario, aggiungi il suo InitialBalance
+            If Not String.IsNullOrWhiteSpace(bankFilter) Then
+                Using cmdInit As New SqliteCommand("SELECT COALESCE(InitialBalance,0) FROM BankAccounts WHERE Name = @bank", conn)
+                    cmdInit.Parameters.AddWithValue("@bank", bankFilter)
+                    Dim initResult = cmdInit.ExecuteScalar()
+                    Dim initBal As Double = 0
+                    If initResult IsNot Nothing AndAlso Double.TryParse(initResult.ToString(), initBal) Then
+                        total += initBal
+                    End If
+                End Using
+            End If
         End Using
 
-        Console.WriteLine("[DEBUG] Saldo restituito: " & total)
         Return total
     End Function
 
@@ -932,13 +973,14 @@ Public Class Form1
             ElseIf contoType = "Saldo" Then
                 Console.WriteLine("[DEBUG] Calcolo saldo (Acredito - Adebito)...")
                 Dim addebitoSum As Double = GetTotalAdebitoByDateRange(startDate, endDate)
-                Dim acreditoSum As Double = GetTotalAcreditoByDateRange(startDate, endDate)
-                Console.WriteLine($"[DEBUG] Adebito: {addebitoSum}, Acredito: {acreditoSum}")
-                totalForRange = acreditoSum - addebitoSum
+                Dim creditoSum As Double = GetTotalAcreditoByDateRange(startDate, endDate)
+                totalForRange = creditoSum - addebitoSum
             Else
                 Console.WriteLine("[DEBUG] Calcolo totale personalizzato per conto: " & contoType)
-                totalForRange = GetTotalByDateRangeAndConto(startDate, endDate, contoType)
+                totalForRange = GetTotalForDateRangeAndConto(startDate, endDate, contoType)
             End If
+
+            totalForRange = Math.Round(totalForRange, 2)
 
             Console.WriteLine($"[DEBUG] Totale calcolato: {totalForRange:F2}")
             MessageBox.Show($"Il totale per {contoType} tra {startDate.ToShortDateString()} e {endDate.ToShortDateString()} è: {totalForRange.ToString("F2")}")
@@ -965,7 +1007,7 @@ Public Class Form1
             Console.WriteLine("[DEBUG] Connessione al database aperta.")
 
             Using cmd As New SqliteCommand("", conn)
-                cmd.CommandText = "SELECT SUM(Adebito) FROM Movimenti WHERE Data BETWEEN @startDate AND @endDate"
+                cmd.CommandText = "SELECT COALESCE(SUM(Adebito),0) FROM Movimenti WHERE Data BETWEEN @startDate AND @endDate"
                 Console.WriteLine("[DEBUG] Query: " & cmd.CommandText)
 
                 cmd.Parameters.AddWithValue("@startDate", startDate.ToString("yyyy-MM-dd"))
@@ -997,12 +1039,12 @@ Public Class Form1
         Dim connString As String = "Data Source=" & databasePath
         Console.WriteLine("[DEBUG] Percorso database: " & databasePath)
 
-        Using conn As New SqliteConnection(connString)
+        Using conn As SqliteConnection = New SqliteConnection(connString)
             conn.Open()
             Console.WriteLine("[DEBUG] Connessione al database aperta.")
 
-            Using cmd As New SqliteCommand("", conn)
-                cmd.CommandText = "SELECT SUM(Acredito) FROM Movimenti WHERE Data BETWEEN @startDate AND @endDate"
+            Using cmd As SqliteCommand = New SqliteCommand("", conn)
+                cmd.CommandText = "SELECT COALESCE(SUM(Acredito),0) FROM Movimenti WHERE Data BETWEEN @startDate AND @endDate"
                 Console.WriteLine("[DEBUG] Query: " & cmd.CommandText)
 
                 cmd.Parameters.AddWithValue("@startDate", startDate.ToString("yyyy-MM-dd"))
@@ -1043,38 +1085,33 @@ Public Class Form1
 
 
     Private Function GetTotalPatrimonio() As Double
-        Console.WriteLine("[DEBUG] Calcolo patrimonio totale.")
-
         Dim total As Double = 0
-        Dim importoIniziale As Double = 0 ' Puoi modificare questo valore in base al tuo importo iniziale
         Dim databaseFolder As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione")
         Dim databasePath As String = Path.Combine(databaseFolder, "amministrazione.db")
         Dim connString As String = "Data Source=" & databasePath
-        Console.WriteLine("[DEBUG] Percorso database: " & databasePath)
 
         Using conn As New SqliteConnection(connString)
             conn.Open()
-            Console.WriteLine("[DEBUG] Connessione al database aperta.")
 
-            Dim query As String = "SELECT SUM(Acredito) - SUM(Adebito) - @importoIniziale FROM Movimenti"
-            Using cmd As New SqliteCommand(query, conn)
-                cmd.Parameters.AddWithValue("@importoIniziale", importoIniziale)
-                Console.WriteLine("[DEBUG] Query: " & query)
-                Console.WriteLine("[DEBUG] Importo iniziale: " & importoIniziale)
+            ' Somma degli InitialBalance nella tabella BankAccounts
+            Using cmdInit As New SqliteCommand("SELECT COALESCE(SUM(InitialBalance),0) FROM BankAccounts", conn)
+                Dim initResult = cmdInit.ExecuteScalar()
+                Dim initSum As Double = 0
+                If initResult IsNot Nothing AndAlso Double.TryParse(initResult.ToString(), initSum) Then
+                    total = initSum
+                End If
+            End Using
 
-                Dim result = cmd.ExecuteScalar()
-                Console.WriteLine("[DEBUG] Risultato query: " & If(result IsNot Nothing, result.ToString(), "NULL"))
-
-                If result IsNot Nothing AndAlso Double.TryParse(result.ToString(), total) Then
-                    Console.WriteLine("[DEBUG] Patrimonio calcolato: " & total)
-                    Return total
-                Else
-                    Console.WriteLine("[DEBUG] Conversione fallita o risultato nullo.")
+            ' Somma dei movimenti (tutti i conti bancari)
+            Using cmdMov As New SqliteCommand("SELECT COALESCE(SUM(Acredito),0) - COALESCE(SUM(Adebito),0) FROM Movimenti", conn)
+                Dim movResult = cmdMov.ExecuteScalar()
+                Dim movSum As Double = 0
+                If movResult IsNot Nothing AndAlso Double.TryParse(movResult.ToString(), movSum) Then
+                    total += movSum
                 End If
             End Using
         End Using
 
-        Console.WriteLine("[DEBUG] Patrimonio restituito: " & total)
         Return total
     End Function
 
@@ -1438,26 +1475,25 @@ Public Class Form1
     End Sub
 
 
-    Private Function GetMovimentiByDateRange(startDate As Date, endDate As Date) As DataTable
-        Console.WriteLine($"[DEBUG] Caricamento movimenti dal {startDate:yyyy-MM-dd} al {endDate:yyyy-MM-dd}")
-
+    Private Function GetMovimentiByDateRange(startDate As Date, endDate As Date, Optional contoFilter As String = "", Optional bankFilter As String = "") As DataTable
         Dim dt As New DataTable()
         Dim databasePath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione", "amministrazione.db")
         Dim connString As String = "Data Source=" & databasePath
-        Console.WriteLine("[DEBUG] Percorso database: " & databasePath)
 
         Using conn As New SqliteConnection(connString)
             conn.Open()
-            Console.WriteLine("[DEBUG] Connessione al database aperta.")
+            Dim sql As String = "SELECT * FROM Movimenti WHERE Data BETWEEN @startDate AND @endDate"
+            If Not String.IsNullOrWhiteSpace(contoFilter) Then sql &= " AND Conto = @conto"
+            If Not String.IsNullOrWhiteSpace(bankFilter) Then sql &= " AND BankAccount = @bank"
 
-            Using cmd As New SqliteCommand("SELECT * FROM Movimenti WHERE Data BETWEEN @startDate AND @endDate", conn)
+            Using cmd As New SqliteCommand(sql, conn)
                 cmd.Parameters.AddWithValue("@startDate", startDate.ToString("yyyy-MM-dd"))
                 cmd.Parameters.AddWithValue("@endDate", endDate.ToString("yyyy-MM-dd"))
-                Console.WriteLine("[DEBUG] Parametri impostati.")
+                If Not String.IsNullOrWhiteSpace(contoFilter) Then cmd.Parameters.AddWithValue("@conto", contoFilter)
+                If Not String.IsNullOrWhiteSpace(bankFilter) Then cmd.Parameters.AddWithValue("@bank", bankFilter)
 
                 Using reader As SqliteDataReader = cmd.ExecuteReader()
                     dt.Load(reader)
-                    Console.WriteLine("[DEBUG] Movimenti caricati: " & dt.Rows.Count)
                 End Using
             End Using
         End Using
@@ -1513,13 +1549,13 @@ Public Class Form1
                 Console.WriteLine("[DEBUG] Connessione al database aperta.")
 
                 Dim query As String = "
-            SELECT strftime('%Y-%m', Data) AS Mese,
-                   SUM(Acredito) AS TotEntrate,
-                   SUM(Adebito) AS TotUscite
-            FROM Movimenti
-            WHERE Data BETWEEN @DataInizio AND @DataFine
-            GROUP BY strftime('%Y-%m', Data)
-            ORDER BY Mese ASC"
+    SELECT strftime('%Y-%m', Data) AS Mese,
+           SUM(Acredito) AS TotEntrate,
+           SUM(Adebito) AS TotUscite
+    FROM Movimenti
+    WHERE Data BETWEEN @DataInizio AND @DataFine
+    GROUP BY strftime('%Y-%m', Data)
+    ORDER BY Mese ASC"
 
                 Using cmd As New Microsoft.Data.Sqlite.SqliteCommand(query, conn)
                     ' Anno solare corrente
@@ -1562,6 +1598,7 @@ Public Class Form1
                     End Using
                 End Using
             End Using
+
         Catch ex As Exception
             MessageBox.Show("Errore durante il caricamento andamento anno corrente: " & ex.Message)
             Console.WriteLine("[DEBUG] Errore CaricaAndamentoAnnoCorrente: " & ex.ToString())
@@ -1655,5 +1692,284 @@ Public Class Form1
         Dim nuovaForm As New Form5
         nuovaForm.Show()
     End Sub
+
+    ' Apertura form gestione conti
+    Private Sub BtnManageConti_Click(sender As Object, e As EventArgs) Handles btnManageConti.Click
+        Try
+            Dim f As New FormAccounts()
+            f.ShowDialog(Me)
+            RefreshAccounts()
+        Catch ex As Exception
+            Console.WriteLine("Errore apertura FormAccounts: " & ex.ToString())
+        End Try
+    End Sub
+
+    ' Metodo pubblico chiamabile da FormAccounts per rinfrescare le combo e i totali
+    Public Sub RefreshAccounts()
+        Try
+            LoadDataIntoComboboxes()
+            LoadData()
+            UpdateLabels()
+            HighlightDatesWithDocuments()
+            AggiornaSaldoAnnoCorrente()
+            Dim dt As DataTable = CaricaAndamentoAnnoCorrente()
+            DisegnaGraficoSaldoLinee(dt, Chart1)
+        Catch ex As Exception
+            Console.WriteLine("Errore in RefreshAccounts: " & ex.ToString())
+        End Try
+    End Sub
+
+    Private Sub cmbAccountFilter_SelectedIndexChanged(sender As Object, e As EventArgs) Handles cmbAccountFilter.SelectedIndexChanged
+        Try
+            Dim bankFilter As String = ""
+            If cmbAccountFilter.SelectedItem IsNot Nothing Then
+                bankFilter = cmbAccountFilter.Text
+                If bankFilter = "Tutti i conti bancari" Then bankFilter = ""
+            End If
+
+            LoadData("", bankFilter)
+            UpdateLabels() ' UpdateLabels usa GetTotalSaldoForDateRange senza bank param: se vuoi che rispetti il filtro modifica UpdateLabels per passare bankFilter
+            ' Aggiorna etichette correttamente rispettando filtro:
+            Dim startOfYear As Date = New Date(Date.Today.Year, 1, 1)
+            lblSaldo.Text = $"Saldo dal primo gennaio: {GetTotalSaldoForDateRange(startOfYear, Date.Today, "", bankFilter):F2}"
+            lblPatrimonio.Text = $"Patrimonio totale: {GetTotalPatrimonio():F2}"
+        Catch ex As Exception
+            Console.WriteLine("Errore filtro conto bancario: " & ex.ToString())
+        End Try
+    End Sub
+
+    Private Sub InitializeMonthFilterCombo()
+        Try
+            ' Se il controllo è già stato aggiunto nel Designer, usalo (così puoi posizionarlo manualmente)
+            Dim existing As ComboBox = TryCast(Me.Controls("cmbMonthFilter"), ComboBox)
+            If existing IsNot Nothing Then
+                cmbMonthFilter = existing
+                cmbMonthFilter.DropDownStyle = ComboBoxStyle.DropDownList
+                Console.WriteLine("[Form1] InitializeMonthFilterCombo: trovato cmbMonthFilter nel Designer.")
+                Return
+            End If
+
+            ' Altrimenti crealo (puoi sempre spostarlo nel Designer in un secondo momento)
+            If cmbMonthFilter Is Nothing Then
+                cmbMonthFilter = New ComboBox() With {
+                    .Name = "cmbMonthFilter",
+                    .DropDownStyle = ComboBoxStyle.DropDownList,
+                    .Font = New System.Drawing.Font("Segoe UI", 10.0F),
+                    .Size = New System.Drawing.Size(160, 28)
+                }
+                ' Posizione di default; se preferisci posizionarlo manualmente eliminare questa riga e aggiungerlo via Designer
+                cmbMonthFilter.Location = New System.Drawing.Point(dtpEndDate.Location.X + dtpEndDate.Width + 10, dtpEndDate.Location.Y)
+                Me.Controls.Add(cmbMonthFilter)
+                Console.WriteLine("[Form1] InitializeMonthFilterCombo: cmbMonthFilter aggiunta al form (default position).")
+            End If
+        Catch ex As Exception
+            Console.WriteLine("[Form1] Errore InitializeMonthFilterCombo: " & ex.ToString())
+        End Try
+    End Sub
+
+    Private Sub UpdateChart()
+        Try
+            If cmbMonthFilter Is Nothing OrElse cmbMonthFilter.SelectedItem Is Nothing Then
+                Console.WriteLine("[Form1] UpdateChart: nessun mese selezionato, disegno annuale.")
+                Dim dtAnno = CaricaAndamentoAnnoCorrente()
+                DisegnaGraficoSaldoLinee(dtAnno, Chart1)
+                Return
+            End If
+
+            Dim monthSelection As String = cmbMonthFilter.SelectedItem.ToString()
+            If monthSelection = "Tutti i mesi" Then
+                ' disegno annuale (comportamento precedente)
+                Dim dtAnno = CaricaAndamentoAnnoCorrente()
+                DisegnaGraficoSaldoLinee(dtAnno, Chart1)
+                Return
+            End If
+
+            ' mese selezionato: disegna andamento giornaliero
+            Dim bankFilter As String = ""
+            If cmbAccountFilter IsNot Nothing AndAlso cmbAccountFilter.SelectedItem IsNot Nothing Then
+                bankFilter = cmbAccountFilter.Text
+                If bankFilter = "Tutti i conti bancari" Then bankFilter = ""
+            End If
+
+            Dim dic = CaricaAndamentoMeseSelezionato(monthSelection, bankFilter)
+
+            ' imposta grafico
+            Chart1.Series.Clear()
+            Chart1.ChartAreas.Clear()
+            Chart1.Titles.Clear()
+
+            Dim area As New ChartArea("AreaMensile")
+            area.AxisX.Title = "" ' non mostrare label ascisse
+            area.AxisY.Title = "Saldo (€)"
+            area.AxisX.Interval = 1
+            area.AxisX.LabelStyle.Enabled = False   ' nasconde le etichette sull'asse X (giorni)
+            area.AxisX.MajorGrid.Enabled = False
+            area.AxisY.LabelStyle.Format = "N2"
+            Chart1.ChartAreas.Add(area)
+
+            ' palette colori (qualificata System.Drawing.Color per evitare ambiguità)
+            Dim palette As System.Drawing.Color() = {System.Drawing.Color.DarkBlue, System.Drawing.Color.Orange, System.Drawing.Color.Green, System.Drawing.Color.Purple, System.Drawing.Color.Red, System.Drawing.Color.Teal, System.Drawing.Color.Brown}
+            Dim idx As Integer = 0
+
+            For Each bankName In dic.Keys
+                Dim dt As DataTable = dic(bankName)
+                Dim s As New Series(bankName)
+                s.ChartType = SeriesChartType.Line
+                s.BorderWidth = 2
+                s.MarkerStyle = MarkerStyle.Circle
+                s.XValueType = ChartValueType.String
+                s.IsXValueIndexed = True
+                s.Color = palette(idx Mod palette.Length)
+                s.IsVisibleInLegend = True
+
+                For Each r As DataRow In dt.Rows
+                    s.Points.AddXY(r("Giorno").ToString(), Convert.ToDouble(r("Saldo")))
+                Next
+
+                Chart1.Series.Add(s)
+                idx += 1
+            Next
+
+            Chart1.Titles.Add($"Andamento mese {monthSelection}" & If(String.IsNullOrWhiteSpace(bankFilter), " (tutti i conti)", $" - {bankFilter}"))
+            Console.WriteLine("[Form1] UpdateChart: grafico mensile aggiornato.")
+        Catch ex As Exception
+            Console.WriteLine("[Form1] Errore UpdateChart: " & ex.ToString())
+        End Try
+    End Sub
+
+    Public Sub Filters_Changed(sender As Object, e As EventArgs)
+        Try
+            UpdateChart()
+        Catch ex As Exception
+            Console.WriteLine("[Form1] Filters_Changed errore: " & ex.ToString())
+        End Try
+    End Sub
+
+    Private Sub PopulateMonths()
+        Try
+            If cmbMonthFilter Is Nothing Then InitializeMonthFilterCombo()
+            cmbMonthFilter.Items.Clear()
+            cmbMonthFilter.Items.Add("Tutti i mesi")
+
+            Dim databasePath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione", "amministrazione.db")
+            Dim connString As String = "Data Source=" & databasePath
+
+            Using conn As New Microsoft.Data.Sqlite.SqliteConnection(connString)
+                conn.Open()
+                Using cmd As New Microsoft.Data.Sqlite.SqliteCommand("SELECT DISTINCT strftime('%Y-%m', Data) AS Mese FROM Movimenti WHERE Data IS NOT NULL ORDER BY Mese DESC", conn)
+                    Using reader As Microsoft.Data.Sqlite.SqliteDataReader = cmd.ExecuteReader()
+                        While reader.Read()
+                            If Not reader.IsDBNull(0) Then
+                                cmbMonthFilter.Items.Add(reader.GetString(0))
+                            End If
+                        End While
+                    End Using
+                End Using
+            End Using
+
+            cmbMonthFilter.SelectedIndex = 0
+            Console.WriteLine("[Form1] PopulateMonths: mesi popolati.")
+        Catch ex As Exception
+            Console.WriteLine("[Form1] Errore PopulateMonths: " & ex.ToString())
+        End Try
+    End Sub
+
+    Public Function CaricaAndamentoMeseSelezionato(yearMonth As String, Optional bankFilter As String = "") As Dictionary(Of String, DataTable)
+        Dim result As New Dictionary(Of String, DataTable)()
+        Try
+            If String.IsNullOrWhiteSpace(yearMonth) Then Return result
+
+            Dim databasePath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione", "amministrazione.db")
+            Dim connString As String = "Data Source=" & databasePath
+
+            Using conn As New Microsoft.Data.Sqlite.SqliteConnection(connString)
+                conn.Open()
+
+                ' Determina lista conti bancari da disegnare
+                Dim banks As New List(Of String)
+                If String.IsNullOrWhiteSpace(bankFilter) Then
+                    Using cmdBanks As New Microsoft.Data.Sqlite.SqliteCommand("SELECT Name FROM BankAccounts ORDER BY Name", conn)
+                        Using r As Microsoft.Data.Sqlite.SqliteDataReader = cmdBanks.ExecuteReader()
+                            While r.Read()
+                                banks.Add(r.GetString(0))
+                            End While
+                        End Using
+                    End Using
+                Else
+                    banks.Add(bankFilter)
+                End If
+
+                ' Range mese
+                Dim parts() = yearMonth.Split("-"c)
+                If parts.Length <> 2 Then Return result
+                Dim anno As Integer = Integer.Parse(parts(0))
+                Dim mese As Integer = Integer.Parse(parts(1))
+                Dim monthStart As Date = New Date(anno, mese, 1)
+                Dim monthEnd As Date = monthStart.AddMonths(1).AddDays(-1)
+
+                For Each bankName In banks
+                    ' saldo iniziale = InitialBalance + delta prima del mese
+                    Dim initBal As Double = 0
+                    Using cmdInit As New Microsoft.Data.Sqlite.SqliteCommand("SELECT COALESCE(InitialBalance,0) FROM BankAccounts WHERE Name = @bank", conn)
+                        cmdInit.Parameters.AddWithValue("@bank", bankName)
+                        Dim v = cmdInit.ExecuteScalar()
+                        If v IsNot Nothing Then Double.TryParse(v.ToString(), initBal)
+                    End Using
+
+                    Dim deltaBefore As Double = 0
+                    Using cmdBefore As New Microsoft.Data.Sqlite.SqliteCommand("SELECT COALESCE(SUM(Acredito),0) - COALESCE(SUM(Adebito),0) FROM Movimenti WHERE BankAccount = @bank AND Data < @start", conn)
+                        cmdBefore.Parameters.AddWithValue("@bank", bankName)
+                        cmdBefore.Parameters.AddWithValue("@start", monthStart.ToString("yyyy-MM-dd"))
+                        Dim vb = cmdBefore.ExecuteScalar()
+                        If vb IsNot Nothing Then Double.TryParse(vb.ToString(), deltaBefore)
+                    End Using
+
+                    Dim startingBalance As Double = initBal + deltaBefore
+
+                    ' raccogli delta giornalieri per il mese
+                    Dim deltas As New Dictionary(Of Integer, Double)
+                    Using cmdDays As New Microsoft.Data.Sqlite.SqliteCommand("SELECT Data, COALESCE(SUM(Acredito),0) - COALESCE(SUM(Adebito),0) AS Delta FROM Movimenti WHERE BankAccount = @bank AND Data BETWEEN @start AND @end GROUP BY Data ORDER BY Data", conn)
+                        cmdDays.Parameters.AddWithValue("@bank", bankName)
+                        cmdDays.Parameters.AddWithValue("@start", monthStart.ToString("yyyy-MM-dd"))
+                        cmdDays.Parameters.AddWithValue("@end", monthEnd.ToString("yyyy-MM-dd"))
+                        Using rd As Microsoft.Data.Sqlite.SqliteDataReader = cmdDays.ExecuteReader()
+                            While rd.Read()
+                                Dim dStr = rd("Data").ToString()
+                                Dim dDate As Date
+                                If Date.TryParse(dStr, dDate) Then
+                                    Dim day = dDate.Day
+                                    Dim delta As Double = 0
+                                    Double.TryParse(rd("Delta").ToString(), delta)
+                                    deltas(day) = delta
+                                End If
+                            End While
+                        End Using
+                    End Using
+
+                    Dim dtDaily As New DataTable()
+                    dtDaily.Columns.Add("Giorno", GetType(String))
+                    dtDaily.Columns.Add("Saldo", GetType(Double))
+
+                    Dim running = startingBalance
+                    Dim daysInMonth = DateTime.DaysInMonth(anno, mese)
+                    For d = 1 To daysInMonth
+                        Dim dayDelta As Double = 0
+                        If deltas.ContainsKey(d) Then dayDelta = deltas(d)
+                        running += dayDelta
+                        Dim row As DataRow = dtDaily.NewRow()
+                        row("Giorno") = d.ToString()
+                        row("Saldo") = Math.Round(running, 2)
+                        dtDaily.Rows.Add(row)
+                    Next
+
+                    result(bankName) = dtDaily
+                Next
+            End Using
+        Catch ex As Exception
+            Console.WriteLine("[Form1] Errore CaricaAndamentoMeseSelezionato: " & ex.ToString())
+        End Try
+
+        Return result
+    End Function
 End Class
 

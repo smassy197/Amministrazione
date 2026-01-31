@@ -111,10 +111,11 @@
 
 		Versione 8.4.3.0
 		-Correzione bug minori e miglioramento prestazioni
+		-Inserimento Conti Correnti multipli
 
 	</Description>
-    <AssemblyVersion>8.4.3.3</AssemblyVersion>
-    <FileVersion>8.4.3.3</FileVersion>
+    <AssemblyVersion>8.4.3.4</AssemblyVersion>
+    <FileVersion>8.4.3.4</FileVersion>
     <EnableWindowsFormsHighDpi>true</EnableWindowsFormsHighDpi>
     <ApplicationIcon>amministrazione_new_logo.ico</ApplicationIcon> <!-- Abilita il supporto DPI alto -->
   </PropertyGroup>
