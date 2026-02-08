@@ -451,11 +451,17 @@ Public Class Form1
 
     '------------------------------------------------------------------------
     Private Sub MonthCalendar1_DateSelected(sender As Object, e As DateRangeEventArgs)
-        ' Quando una nuova data viene selezionata, carica i dati relativi a quella data nella DataGridView
-        LoadDataByDate(e.Start, e.End)
+        ' Mantieni il filtro corrente sul conto bancario quando si seleziona una data
+        Dim bankFilter As String = ""
+        If cmbAccountFilter IsNot Nothing AndAlso cmbAccountFilter.SelectedItem IsNot Nothing Then
+            bankFilter = cmbAccountFilter.Text
+            If bankFilter = "Tutti i conti bancari" Then bankFilter = ""
+        End If
+
+        LoadDataByDate(e.Start, e.End, bankFilter)
     End Sub
 
-    Private Sub LoadDataByDate(startDate As Date, endDate As Date)
+    Private Sub LoadDataByDate(startDate As Date, endDate As Date, Optional bankFilter As String = "")
         Dim databasePath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione", "amministrazione.db")
         Dim connString As String = "Data Source=" & databasePath
 
@@ -467,13 +473,16 @@ Public Class Form1
                 SELECT * FROM Movimenti
                 WHERE Data >= @startDate AND Data <= @endDate"
 
-                Console.WriteLine("Query eseguita: " & query)
-                Console.WriteLine("StartDate: " & startDate.ToString("yyyy-MM-dd"))
-                Console.WriteLine("EndDate: " & endDate.ToString("yyyy-MM-dd"))
+                If Not String.IsNullOrWhiteSpace(bankFilter) Then
+                    query &= " AND BankAccount = @bank"
+                End If
 
                 Using cmd As New SqliteCommand(query, conn)
                     cmd.Parameters.AddWithValue("@startDate", startDate.ToString("yyyy-MM-dd"))
                     cmd.Parameters.AddWithValue("@endDate", endDate.ToString("yyyy-MM-dd"))
+                    If Not String.IsNullOrWhiteSpace(bankFilter) Then
+                        cmd.Parameters.AddWithValue("@bank", bankFilter)
+                    End If
 
                     Using reader As SqliteDataReader = cmd.ExecuteReader()
                         Dim dt As New DataTable()
@@ -494,7 +503,6 @@ Public Class Form1
                             row("Conto") = reader("Conto").ToString()
                             row("Descrizione") = reader("Descrizione").ToString()
 
-                            ' Conversione sicura Adebito
                             Dim adebitoValue As Double
                             If Double.TryParse(reader("Adebito").ToString(), adebitoValue) Then
                                 row("Adebito") = adebitoValue
@@ -502,7 +510,6 @@ Public Class Form1
                                 row("Adebito") = 0
                             End If
 
-                            ' Conversione sicura Acredito
                             Dim acreditValue As Double
                             If Double.TryParse(reader("Acredito").ToString(), acreditValue) Then
                                 row("Acredito") = acreditValue
@@ -510,16 +517,12 @@ Public Class Form1
                                 row("Acredito") = 0
                             End If
 
-                            ' Nota
                             row("Nota") = If(reader("Nota") IsNot DBNull.Value, reader("Nota").ToString(), "")
-
-                            ' BankAccount (se presente)
                             row("BankAccount") = If(reader("BankAccount") IsNot DBNull.Value, reader("BankAccount").ToString(), "HelloBank")
 
                             dt.Rows.Add(row)
                         End While
 
-                        Console.WriteLine("Righe caricate: " & dt.Rows.Count.ToString())
                         DataGridView1.DataSource = dt
                     End Using
                 End Using
@@ -529,7 +532,6 @@ Public Class Form1
             Console.WriteLine("Errore nel caricamento dei dati: " & ex.ToString())
         End Try
     End Sub
-
     Private Sub btnResetSearch_Click(sender As Object, e As EventArgs)
         Console.WriteLine("Reset ricerca avviato.")
 
@@ -633,20 +635,20 @@ Public Class Form1
         Dim connString = "Data Source=" & databasePath
 
         Try
+            Dim bankAccountUsed As String = If(cmbBankAccount IsNot Nothing AndAlso Not String.IsNullOrWhiteSpace(cmbBankAccount.Text), cmbBankAccount.Text, "HelloBank")
+
             Using conn As New SqliteConnection(connString)
                 conn.Open()
 
                 Dim insertMovimentiQuery = "
-        INSERT INTO Movimenti (Data, Conto, Descrizione, Adebito, Acredito, Nota, BankAccount)
-        VALUES (@data, @conto, @descrizione, @addebito, @acredito, @nota, @bankaccount)"
-
+    INSERT INTO Movimenti (Data, Conto, Descrizione, Adebito, Acredito, Nota, BankAccount)
+    VALUES (@data, @conto, @descrizione, @addebito, @acredito, @nota, @bankaccount)"
 
                 Using cmd As New SqliteCommand(insertMovimentiQuery, conn)
                     Dim dataStr = MonthCalendar1.SelectionStart.ToString("yyyy-MM-dd")
                     Dim conto = cmbConto.Text
                     Dim descrizione = cmbDescrizione.Text
                     Dim nota = RichTextBoxNota.Text
-                    Dim bankAccount = If(cmbBankAccount IsNot Nothing AndAlso Not String.IsNullOrWhiteSpace(cmbBankAccount.Text), cmbBankAccount.Text, "HelloBank")
 
                     Dim adebitoText = txtAdebito.Text.Replace(".", ",")
                     Dim acreditText = txtAcredito.Text.Replace(".", ",")
@@ -663,7 +665,7 @@ Public Class Form1
                     cmd.Parameters.AddWithValue("@addebito", adebitoValue)
                     cmd.Parameters.AddWithValue("@acredito", acreditValue)
                     cmd.Parameters.AddWithValue("@nota", nota)
-                    cmd.Parameters.AddWithValue("@bankaccount", bankAccount)
+                    cmd.Parameters.AddWithValue("@bankaccount", bankAccountUsed)
 
                     cmd.ExecuteNonQuery()
                 End Using
@@ -682,12 +684,24 @@ Public Class Form1
 
                 ' Inserimento BankAccount se manca (mantieni InitialBalance se vuoi impostarlo nel form BankAccounts)
                 Using cmd As New SqliteCommand("INSERT OR IGNORE INTO BankAccounts (Name) VALUES (@bank)", conn)
-                    cmd.Parameters.AddWithValue("@bank", If(cmbBankAccount IsNot Nothing, cmbBankAccount.Text, "HelloBank"))
+                    cmd.Parameters.AddWithValue("@bank", bankAccountUsed)
                     cmd.ExecuteNonQuery()
                 End Using
             End Using
 
+            ' Salvo l'ultimo conto usato così la combo viene sincronizzata anche al prossimo avvio
+            Try
+                Dim databaseFolder As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione")
+                Directory.CreateDirectory(databaseFolder)
+                Dim lastBankFile As String = Path.Combine(databaseFolder, "lastbank.txt")
+                SaveLastBank(lastBankFile, bankAccountUsed)
+            Catch ex As Exception
+                Console.WriteLine("[DEBUG] Errore salvataggio lastbank in btnSave_Click: " & ex.ToString())
+            End Try
+
             MessageBox.Show("Dati salvati con successo!")
+
+            ' Ricarico dati e combo (LoadDataIntoComboboxes leggerà lastbank.txt e ripristinerà la selezione)
             LoadData()
             UpdateLabels()
             LoadDataIntoComboboxes()
@@ -696,6 +710,45 @@ Public Class Form1
             AggiornaSaldoAnnoCorrente()
             Dim dt = CaricaAndamentoAnnoCorrente()
             DisegnaGraficoSaldoLinee(dt, Chart1)
+
+            ' Forzo la selezione della combo cmbBankAccount al conto appena usato se non già selezionato
+            Try
+                If cmbBankAccount IsNot Nothing Then
+                    For i As Integer = 0 To cmbBankAccount.Items.Count - 1
+                        Dim drv = TryCast(cmbBankAccount.Items(i), DataRowView)
+                        Dim name As String = If(drv IsNot Nothing, drv("Name").ToString(), cmbBankAccount.Items(i).ToString())
+                        If String.Equals(name, bankAccountUsed, StringComparison.OrdinalIgnoreCase) Then
+                            cmbBankAccount.SelectedIndex = i
+                            Exit For
+                        End If
+                    Next
+                End If
+            Catch ex As Exception
+                Console.WriteLine("[DEBUG] Errore sincronizzazione cmbBankAccount dopo Save: " & ex.ToString())
+            End Try
+
+            ' Forzo la selezione di cmbAccountFilter al conto appena usato così il filtro rimane attivo dopo il salvataggio
+            Try
+                If cmbAccountFilter IsNot Nothing Then
+                    For i As Integer = 0 To cmbAccountFilter.Items.Count - 1
+                        Dim item = cmbAccountFilter.Items(i)
+                        Dim name As String = ""
+                        Dim drv = TryCast(item, DataRowView)
+                        If drv IsNot Nothing Then
+                            name = drv("Name").ToString()
+                        Else
+                            name = item.ToString()
+                        End If
+
+                        If String.Equals(name, bankAccountUsed, StringComparison.OrdinalIgnoreCase) Then
+                            cmbAccountFilter.SelectedIndex = i
+                            Exit For
+                        End If
+                    Next
+                End If
+            Catch ex As Exception
+                Console.WriteLine("[DEBUG] Errore sincronizzazione cmbAccountFilter dopo Save: " & ex.ToString())
+            End Try
 
             ' Reset campi
             txtAcredito.Text = ""
@@ -708,7 +761,6 @@ Public Class Form1
             Console.WriteLine("Errore btnSave_Click: " & ex.ToString)
         End Try
     End Sub
-
     Private Sub LoadData(Optional contoFilter As String = "", Optional bankFilter As String = "")
         Dim databasePath As String = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Amministrazione", "amministrazione.db")
         Dim connString As String = "Data Source=" & databasePath
