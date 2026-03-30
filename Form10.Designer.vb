@@ -230,7 +230,6 @@ Partial Class FormNuovoDocumento
         ' lstAllegati
         ' 
         lstAllegati.FormattingEnabled = True
-        lstAllegati.ItemHeight = 15
         lstAllegati.Location = New Point(115, 293)
         lstAllegati.Name = "lstAllegati"
         lstAllegati.Size = New Size(508, 169)

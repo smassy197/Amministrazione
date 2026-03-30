@@ -3,7 +3,7 @@ Imports System.Diagnostics
 Imports System.Drawing
 Imports System.IO
 Imports System.IO.Compression
-Imports DocumentFormat.OpenXml.Wordprocessing
+' OpenXML imports removed: open .doc/.docx with system default apps instead of inline preview
 
 
 Public Class FormNuovoDocumento
@@ -26,6 +26,9 @@ Public Class FormNuovoDocumento
 
         lstAllegati.AllowDrop = True
         Console.WriteLine("[DEBUG] Drag & Drop abilitato su lstAllegati.")
+        ' Abilita selezione multipla per cancellazione di più allegati insieme
+        lstAllegati.SelectionMode = SelectionMode.MultiExtended
+        Console.WriteLine("[DEBUG] Selezione multipla abilitata su lstAllegati.")
 
         If documentId.HasValue Then
             Me.Text = $"Documento ID: {documentId.Value}"
@@ -146,24 +149,60 @@ Public Class FormNuovoDocumento
     End Sub
 
     Private Sub btnRimuoviAllegato_Click(sender As Object, e As EventArgs) Handles btnRimuoviAllegato.Click
-        If lstAllegati.SelectedItem IsNot Nothing Then
-            Dim fileName = lstAllegati.SelectedItem.ToString()
-            allegati.Remove(fileName)
-            lstAllegati.Items.Remove(fileName)
-            Console.WriteLine("[DEBUG] Allegato rimosso: " & fileName)
-
-            Dim fullPath = Path.Combine(documentsFolderPath, fileName)
-            If File.Exists(fullPath) Then
-                File.Delete(fullPath)
-                Console.WriteLine("[DEBUG] File eliminato fisicamente: " & fullPath)
-            Else
-                Console.WriteLine("[DEBUG] File non trovato per eliminazione: " & fullPath)
-            End If
+        If lstAllegati.SelectedItems Is Nothing OrElse lstAllegati.SelectedItems.Count = 0 Then
+            Return
         End If
+
+        ' Copia i nomi selezionati in una lista per evitare problemi durante la rimozione
+        Dim toRemove As New List(Of String)
+        For Each itm In lstAllegati.SelectedItems
+            toRemove.Add(itm.ToString())
+        Next
+
+        ' Conferma all'utente
+        Dim msg = If(toRemove.Count = 1, "Eliminare l'allegato selezionato?", $"Eliminare i {toRemove.Count} allegati selezionati?")
+        If MessageBox.Show(msg, "Conferma eliminazione", MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then
+            Console.WriteLine("[DEBUG] Eliminazione annullata dall'utente.")
+            Return
+        End If
+
+        For Each fileName In toRemove
+            Try
+                allegati.Remove(fileName)
+                lstAllegati.Items.Remove(fileName)
+                Console.WriteLine("[DEBUG] Allegato rimosso: " & fileName)
+
+                Dim fullPath = Path.Combine(documentsFolderPath, fileName)
+                If File.Exists(fullPath) Then
+                    Try
+                        File.Delete(fullPath)
+                        Console.WriteLine("[DEBUG] File eliminato fisicamente: " & fullPath)
+                    Catch ex As Exception
+                        Console.WriteLine("[DEBUG] Errore eliminazione file fisico: " & ex.ToString())
+                    End Try
+                Else
+                    Console.WriteLine("[DEBUG] File non trovato per eliminazione: " & fullPath)
+                End If
+            Catch ex As Exception
+                Console.WriteLine("[DEBUG] Errore durante la rimozione dell'allegato " & fileName & ": " & ex.ToString())
+            End Try
+        Next
     End Sub
 
 
     Private Sub lstAllegati_SelectedIndexChanged(sender As Object, e As EventArgs) Handles lstAllegati.SelectedIndexChanged
+        ' Se la selezione contiene più elementi, disabilita l'anteprima
+        If lstAllegati.SelectedItems IsNot Nothing AndAlso lstAllegati.SelectedItems.Count > 1 Then
+            panelPreview.Controls.Clear()
+            Dim lblMulti As New Label()
+            lblMulti.Text = $"Anteprima disabilitata per selezione multipla ({lstAllegati.SelectedItems.Count} file)"
+            lblMulti.Dock = DockStyle.Fill
+            lblMulti.TextAlign = ContentAlignment.MiddleCenter
+            panelPreview.Controls.Add(lblMulti)
+            Console.WriteLine("[DEBUG] Anteprima disabilitata per selezione multipla: " & lstAllegati.SelectedItems.Count)
+            Return
+        End If
+
         If lstAllegati.SelectedItem IsNot Nothing Then
             Dim fileName = lstAllegati.SelectedItem.ToString()
             Dim fullPath = Path.Combine(documentsFolderPath, fileName)
@@ -190,6 +229,8 @@ Public Class FormNuovoDocumento
             Console.WriteLine("[DEBUG] Campo AnnoRiferimento mancante.")
             Return
         End If
+
+
 
         If TextBoxNote.Text = "" Then
             MessageBox.Show("Per favore inserisci una nota.")
@@ -718,13 +759,26 @@ Public Class FormNuovoDocumento
             Return
         End If
 
-        ' --- Default ---
-        Console.WriteLine("[DEBUG] Nessuna anteprima disponibile per: " & ext)
-        Dim lblDefault As New Label()
-        lblDefault.Text = "Nessuna anteprima disponibile"
-        lblDefault.Dock = DockStyle.Fill
-        lblDefault.TextAlign = ContentAlignment.MiddleCenter
-        panelPreview.Controls.Add(lblDefault)
+
+
+        ' --- Default: apri con l'applicazione predefinita del sistema ---
+        Console.WriteLine("[DEBUG] Nessuna anteprima interna per: " & ext & " → provo ad aprire con app predefinita.")
+        Try
+            Process.Start(New ProcessStartInfo(fullPath) With {.UseShellExecute = True})
+            Dim lblOpened As New Label()
+            lblOpened.Text = "File aperto con l'applicazione predefinita."
+            lblOpened.Dock = DockStyle.Fill
+            lblOpened.TextAlign = ContentAlignment.MiddleCenter
+            panelPreview.Controls.Add(lblOpened)
+            Console.WriteLine("[DEBUG] Apertura esterna avviata per: " & fullPath)
+        Catch ex As Exception
+            Console.WriteLine("[DEBUG] Errore apertura esterna: " & ex.ToString())
+            Dim lblDefault As New Label()
+            lblDefault.Text = "Nessuna anteprima disponibile e impossibile aprire il file con l'applicazione predefinita."
+            lblDefault.Dock = DockStyle.Fill
+            lblDefault.TextAlign = ContentAlignment.MiddleCenter
+            panelPreview.Controls.Add(lblDefault)
+        End Try
     End Sub
 
     Private Function ReadExactly(fs As FileStream, buffer As Byte(), offset As Integer, count As Integer) As Integer
@@ -871,7 +925,40 @@ Public Class FormNuovoDocumento
         Next
     End Sub
 
+    ' Aggiunto handler per il doppio click su lstAllegati: apre il file in una finestra di anteprima (FormAnteprimaDocumento) se presente,
+    ' altrimenti apre il file con l'app predefinita del sistema.
+    Private Sub lstAllegati_DoubleClick(sender As Object, e As EventArgs) Handles lstAllegati.DoubleClick
+        Try
+            If lstAllegati.SelectedItem Is Nothing Then Return
 
+            Dim fileName = lstAllegati.SelectedItem.ToString()
+            Dim fullPath = Path.Combine(documentsFolderPath, fileName)
 
+            If Not File.Exists(fullPath) Then
+                MessageBox.Show("Il file selezionato non è disponibile: " & fileName, "File non trovato", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Console.WriteLine("[DEBUG] lstAllegati_DoubleClick: file non trovato -> " & fullPath)
+                Return
+            End If
 
+            Try
+                ' Se esiste la form di anteprima personalizzata la usiamo (presente nel progetto: FormAnteprimaDocumento)
+                Dim anteprima As New FormAnteprimaDocumento(fullPath)
+                anteprima.ShowDialog(Me)
+                Console.WriteLine("[DEBUG] lstAllegati_DoubleClick: aperto in FormAnteprimaDocumento -> " & fullPath)
+            Catch ex As Exception
+                ' Fallback: apri con l'applicazione predefinita del sistema
+                Console.WriteLine("[DEBUG] FormAnteprimaDocumento non disponibile o errore: " & ex.ToString())
+                Try
+                    Process.Start(New ProcessStartInfo(fullPath) With {.UseShellExecute = True})
+                    Console.WriteLine("[DEBUG] lstAllegati_DoubleClick: aperto con app predefinita -> " & fullPath)
+                Catch ex2 As Exception
+                    Console.WriteLine("[DEBUG] Errore apertura con app predefinita: " & ex2.ToString())
+                    MessageBox.Show("Impossibile aprire il file: " & ex2.Message, "Errore apertura", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                End Try
+            End Try
+        Catch ex As Exception
+            Console.WriteLine("[DEBUG] Errore lstAllegati_DoubleClick generale: " & ex.ToString())
+            MessageBox.Show("Si è verificato un errore durante l'apertura del file.", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
 End Class
