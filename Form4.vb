@@ -28,6 +28,43 @@ Public Class FormChart
         Console.WriteLine("[DEBUG] PopulateYearComboBox completato.")
 
         Console.WriteLine("[DEBUG] FormChart_Load completato.")
+
+        ' Aggiungi pulsante per aprire il Monitor (non aprire automaticamente)
+        Try
+            Dim btnOpenMonitor As New Button()
+            btnOpenMonitor.Text = "Apri Monitor"
+            btnOpenMonitor.Width = 120
+            btnOpenMonitor.Height = 28
+            btnOpenMonitor.Left = 10
+            btnOpenMonitor.Top = Me.ClientSize.Height - 40
+            btnOpenMonitor.Anchor = AnchorStyles.Bottom Or AnchorStyles.Left
+            AddHandler btnOpenMonitor.Click, AddressOf BtnOpenMonitor_Click
+            Me.Controls.Add(btnOpenMonitor)
+            Console.WriteLine("[DEBUG] Pulsante Apri Monitor aggiunto a Form4.")
+        Catch ex As Exception
+            Console.WriteLine("[DEBUG] Errore aggiunta pulsante Monitor in Form4: " & ex.ToString())
+        End Try
+    End Sub
+
+    Private Sub BtnOpenMonitor_Click(sender As Object, e As EventArgs)
+        OpenOrFocusMonitor()
+    End Sub
+
+    Private Sub OpenOrFocusMonitor()
+        For Each f As Form In Application.OpenForms
+            If TypeOf f Is FormMonitor Then
+                f.BringToFront()
+                f.WindowState = FormWindowState.Normal
+                Return
+            End If
+        Next
+
+        Try
+            Dim fm As New FormMonitor()
+            fm.Show()
+        Catch ex As Exception
+            MessageBox.Show("Impossibile aprire FormMonitor: " & ex.Message)
+        End Try
     End Sub
 
 

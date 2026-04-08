@@ -64,6 +64,7 @@ Partial Class Form1
         cmbBankAccount = New ComboBox()
         cmbAccountFilter = New ComboBox()
         cmbMonthFilter = New ComboBox()
+        BtnOpenMonitorMain = New Button()
         CType(DataGridView1, ComponentModel.ISupportInitialize).BeginInit()
         Panel1.SuspendLayout()
         CType(saldoattuale, ComponentModel.ISupportInitialize).BeginInit()
@@ -90,7 +91,7 @@ Partial Class Form1
         ' 
         ' btnSave
         ' 
-        btnSave.Font = New Font("Segoe UI", 12.0F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        btnSave.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         btnSave.Location = New Point(667, 18)
         btnSave.Margin = New Padding(3, 2, 3, 2)
         btnSave.Name = "btnSave"
@@ -114,7 +115,7 @@ Partial Class Form1
         ' Label1
         ' 
         Label1.AutoSize = True
-        Label1.Font = New Font("Segoe UI", 12.0F)
+        Label1.Font = New Font("Segoe UI", 12F)
         Label1.Location = New Point(275, 38)
         Label1.Name = "Label1"
         Label1.Size = New Size(52, 21)
@@ -124,7 +125,7 @@ Partial Class Form1
         ' Label3
         ' 
         Label3.AutoSize = True
-        Label3.Font = New Font("Segoe UI", 12.0F)
+        Label3.Font = New Font("Segoe UI", 12F)
         Label3.Location = New Point(275, 125)
         Label3.Name = "Label3"
         Label3.Size = New Size(68, 21)
@@ -134,7 +135,7 @@ Partial Class Form1
         ' Label4
         ' 
         Label4.AutoSize = True
-        Label4.Font = New Font("Segoe UI", 12.0F)
+        Label4.Font = New Font("Segoe UI", 12F)
         Label4.Location = New Point(275, 165)
         Label4.Name = "Label4"
         Label4.Size = New Size(72, 21)
@@ -144,7 +145,7 @@ Partial Class Form1
         ' Label5
         ' 
         Label5.AutoSize = True
-        Label5.Font = New Font("Segoe UI", 12.0F)
+        Label5.Font = New Font("Segoe UI", 12F)
         Label5.Location = New Point(275, 86)
         Label5.Name = "Label5"
         Label5.Size = New Size(90, 21)
@@ -153,7 +154,7 @@ Partial Class Form1
         ' 
         ' cmbConto
         ' 
-        cmbConto.Font = New Font("Segoe UI", 12.0F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        cmbConto.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         cmbConto.FormattingEnabled = True
         cmbConto.Location = New Point(380, 51)
         cmbConto.Margin = New Padding(3, 2, 3, 2)
@@ -163,7 +164,7 @@ Partial Class Form1
         ' 
         ' cmbDescrizione
         ' 
-        cmbDescrizione.Font = New Font("Segoe UI", 12.0F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        cmbDescrizione.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         cmbDescrizione.FormattingEnabled = True
         cmbDescrizione.Location = New Point(380, 83)
         cmbDescrizione.Margin = New Padding(3, 2, 3, 2)
@@ -173,7 +174,7 @@ Partial Class Form1
         ' 
         ' cmbContoType
         ' 
-        cmbContoType.Font = New Font("Segoe UI", 12.0F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        cmbContoType.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         cmbContoType.FormattingEnabled = True
         cmbContoType.Location = New Point(876, 35)
         cmbContoType.Margin = New Padding(3, 2, 3, 2)
@@ -199,7 +200,7 @@ Partial Class Form1
         ' 
         ' btnCalculate
         ' 
-        btnCalculate.Font = New Font("Segoe UI", 12.0F)
+        btnCalculate.Font = New Font("Segoe UI", 12F)
         btnCalculate.Location = New Point(876, 130)
         btnCalculate.Margin = New Padding(3, 2, 3, 2)
         btnCalculate.Name = "btnCalculate"
@@ -211,7 +212,7 @@ Partial Class Form1
         ' lblSaldo
         ' 
         lblSaldo.AutoSize = True
-        lblSaldo.Font = New Font("Segoe UI", 12.0F)
+        lblSaldo.Font = New Font("Segoe UI", 12F)
         lblSaldo.Location = New Point(605, 203)
         lblSaldo.Name = "lblSaldo"
         lblSaldo.Size = New Size(56, 21)
@@ -221,7 +222,7 @@ Partial Class Form1
         ' lblPatrimonio
         ' 
         lblPatrimonio.AutoSize = True
-        lblPatrimonio.Font = New Font("Segoe UI", 12.0F)
+        lblPatrimonio.Font = New Font("Segoe UI", 12F)
         lblPatrimonio.Location = New Point(876, 203)
         lblPatrimonio.Name = "lblPatrimonio"
         lblPatrimonio.Size = New Size(56, 21)
@@ -231,7 +232,7 @@ Partial Class Form1
         ' Label6
         ' 
         Label6.AutoSize = True
-        Label6.Font = New Font("Segoe UI", 12.0F)
+        Label6.Font = New Font("Segoe UI", 12F)
         Label6.Location = New Point(876, 12)
         Label6.Name = "Label6"
         Label6.Size = New Size(60, 21)
@@ -240,7 +241,7 @@ Partial Class Form1
         ' 
         ' btnShowAll
         ' 
-        btnShowAll.Font = New Font("Segoe UI", 12.0F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        btnShowAll.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         btnShowAll.Location = New Point(137, 189)
         btnShowAll.Margin = New Padding(3, 2, 3, 2)
         btnShowAll.Name = "btnShowAll"
@@ -279,7 +280,7 @@ Partial Class Form1
         ' 
         ' btnResetSearch
         ' 
-        btnResetSearch.Font = New Font("Segoe UI", 12.0F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        btnResetSearch.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         btnResetSearch.Location = New Point(16, 189)
         btnResetSearch.Margin = New Padding(3, 2, 3, 2)
         btnResetSearch.Name = "btnResetSearch"
@@ -290,7 +291,7 @@ Partial Class Form1
         ' 
         ' OpenChart
         ' 
-        OpenChart.Font = New Font("Segoe UI", 12.0F)
+        OpenChart.Font = New Font("Segoe UI", 12F)
         OpenChart.Location = New Point(1029, 130)
         OpenChart.Margin = New Padding(3, 2, 3, 2)
         OpenChart.Name = "OpenChart"
@@ -311,7 +312,7 @@ Partial Class Form1
         ' 
         ' RichTextBoxNota
         ' 
-        RichTextBoxNota.Font = New Font("Segoe UI", 12.0F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        RichTextBoxNota.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         RichTextBoxNota.Location = New Point(496, 121)
         RichTextBoxNota.Margin = New Padding(3, 2, 3, 2)
         RichTextBoxNota.Name = "RichTextBoxNota"
@@ -322,7 +323,7 @@ Partial Class Form1
         ' Label2
         ' 
         Label2.AutoSize = True
-        Label2.Font = New Font("Segoe UI", 12.0F)
+        Label2.Font = New Font("Segoe UI", 12F)
         Label2.Location = New Point(667, 142)
         Label2.Name = "Label2"
         Label2.Size = New Size(44, 21)
@@ -341,7 +342,7 @@ Partial Class Form1
         ' lblDownloadStatus
         ' 
         lblDownloadStatus.AutoSize = True
-        lblDownloadStatus.Font = New Font("Segoe UI", 12.0F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        lblDownloadStatus.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         lblDownloadStatus.Location = New Point(98, 86)
         lblDownloadStatus.Name = "lblDownloadStatus"
         lblDownloadStatus.Size = New Size(56, 21)
@@ -362,7 +363,7 @@ Partial Class Form1
         ' 
         ' btnExport
         ' 
-        btnExport.Font = New Font("Segoe UI", 12.0F)
+        btnExport.Font = New Font("Segoe UI", 12F)
         btnExport.Location = New Point(943, 130)
         btnExport.Margin = New Padding(3, 2, 3, 2)
         btnExport.Name = "btnExport"
@@ -404,7 +405,7 @@ Partial Class Form1
         ' 
         ' Button1
         ' 
-        Button1.Font = New Font("Segoe UI", 12.0F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        Button1.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         Button1.Location = New Point(1298, 12)
         Button1.Margin = New Padding(3, 2, 3, 2)
         Button1.Name = "Button1"
@@ -415,7 +416,7 @@ Partial Class Form1
         ' 
         ' btnManageConti
         ' 
-        btnManageConti.Font = New Font("Segoe UI", 12.0F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        btnManageConti.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         btnManageConti.Location = New Point(745, 18)
         btnManageConti.Margin = New Padding(3, 2, 3, 2)
         btnManageConti.Name = "btnManageConti"
@@ -426,7 +427,7 @@ Partial Class Form1
         ' 
         ' cmbBankAccount
         ' 
-        cmbBankAccount.Font = New Font("Segoe UI", 12.0F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        cmbBankAccount.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         cmbBankAccount.FormattingEnabled = True
         cmbBankAccount.Location = New Point(380, 18)
         cmbBankAccount.Margin = New Padding(3, 2, 3, 2)
@@ -437,7 +438,7 @@ Partial Class Form1
         ' 
         ' cmbAccountFilter
         ' 
-        cmbAccountFilter.Font = New Font("Segoe UI", 12.0F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        cmbAccountFilter.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         cmbAccountFilter.FormattingEnabled = True
         cmbAccountFilter.Location = New Point(667, 86)
         cmbAccountFilter.Margin = New Padding(3, 2, 3, 2)
@@ -454,11 +455,22 @@ Partial Class Form1
         cmbMonthFilter.Size = New Size(93, 23)
         cmbMonthFilter.TabIndex = 43
         ' 
+        ' BtnOpenMonitorMain
+        ' 
+        BtnOpenMonitorMain.Font = New Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        BtnOpenMonitorMain.Location = New Point(745, 130)
+        BtnOpenMonitorMain.Name = "BtnOpenMonitorMain"
+        BtnOpenMonitorMain.Size = New Size(117, 44)
+        BtnOpenMonitorMain.TabIndex = 44
+        BtnOpenMonitorMain.Text = "Monitor"
+        BtnOpenMonitorMain.UseVisualStyleBackColor = True
+        ' 
         ' Form1
         ' 
-        AutoScaleDimensions = New SizeF(7.0F, 15.0F)
+        AutoScaleDimensions = New SizeF(7F, 15F)
         AutoScaleMode = AutoScaleMode.Font
         ClientSize = New Size(1648, 637)
+        Controls.Add(BtnOpenMonitorMain)
         Controls.Add(cmbMonthFilter)
         Controls.Add(cmbAccountFilter)
         Controls.Add(cmbBankAccount)
@@ -546,4 +558,5 @@ Partial Class Form1
     Friend WithEvents cmbBankAccount As ComboBox
     Friend WithEvents cmbAccountFilter As ComboBox
     Friend WithEvents cmbMonthFilter As ComboBox
+    Friend WithEvents BtnOpenMonitorMain As Button
 End Class

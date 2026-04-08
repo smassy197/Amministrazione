@@ -100,8 +100,26 @@ Public Class Form1
             DisegnaGraficoSaldoLinee(dt, Chart1)   ' chart1 è il controllo Chart sul form
 
 
+
         Catch ex As Exception
             Console.WriteLine("Errore in Form1_Load: " & ex.Message & vbCrLf & ex.StackTrace)
+        End Try
+    End Sub
+
+    Private Sub BtnOpenMonitorMain_Click(sender As Object, e As EventArgs) Handles BtnOpenMonitorMain.Click
+        For Each f As Form In Application.OpenForms
+            If TypeOf f Is FormMonitor Then
+                f.BringToFront()
+                f.WindowState = FormWindowState.Normal
+                Return
+            End If
+        Next
+
+        Try
+            Dim fm As New FormMonitor()
+            fm.Show()
+        Catch ex As Exception
+            MessageBox.Show("Impossibile aprire FormMonitor: " & ex.Message)
         End Try
     End Sub
 
@@ -846,19 +864,19 @@ Public Class Form1
             If cb Is Nothing Then Return
 
             Dim selectedName As String = ""
-                If cb.SelectedItem IsNot Nothing Then
-                    ' quando il combobox è bound a DataTable gli elementi sono DataRowView
-                    Dim drv = TryCast(cb.SelectedItem, DataRowView)
-                    If drv IsNot Nothing Then
-                        selectedName = drv("Name").ToString()
-                    Else
-                        selectedName = cb.Text
-                    End If
+            If cb.SelectedItem IsNot Nothing Then
+                ' quando il combobox è bound a DataTable gli elementi sono DataRowView
+                Dim drv = TryCast(cb.SelectedItem, DataRowView)
+                If drv IsNot Nothing Then
+                    selectedName = drv("Name").ToString()
+                Else
+                    selectedName = cb.Text
                 End If
+            End If
 
-                If Not String.IsNullOrWhiteSpace(selectedName) Then
-                    SaveLastBank(lastBankFile, selectedName)
-                End If
+            If Not String.IsNullOrWhiteSpace(selectedName) Then
+                SaveLastBank(lastBankFile, selectedName)
+            End If
         Catch ex As Exception
             Console.WriteLine("[DEBUG] Errore cmbBankAccount_SelectedIndexChanged: " & ex.ToString())
         End Try
